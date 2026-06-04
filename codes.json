@@ -1,4 +1,35 @@
 {
-  "updated_at": "2026-06-04T18:06:29.823486+00:00",
-  "codes": []
+  "updated_at": "2026-06-04T18:23:11.157264+00:00",
+  "codes": [
+    {
+      "id": "3e7d8551ebd4",
+      "game": "gaminator",
+      "code": "91K",
+      "sources": [
+        "tiktok"
+      ],
+      "found_at": "2026-06-04T18:22:50.770235+00:00",
+      "raw_sources": [
+        {
+          "platform": "tiktok",
+          "url": "https://www.tiktok.com/@gaminator3000"
+        }
+      ]
+    },
+    {
+      "id": "1a0784f4671c",
+      "game": "gaminator",
+      "code": "NMF3X",
+      "sources": [
+        "taplink"
+      ],
+      "found_at": "2026-06-04T18:22:32.259138+00:00",
+      "raw_sources": [
+        {
+          "platform": "taplink",
+          "url": "https://taplink.cc/gaminator3000"
+        }
+      ]
+    }
+  ]
 }
