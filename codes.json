@@ -1,14 +1,21 @@
 {
-  "updated_at": "2026-06-04T19:48:21.498817+00:00",
+  "updated_at": "2026-06-04T21:24:32.717387+00:00",
   "codes": [
     {
       "id": "1a0784f4671c",
       "game": "gaminator",
       "code": "NMF3X",
-      "sources": ["taplink"],
+      "sources": [
+        "taplink"
+      ],
       "post_date": "2026-06-04T19:48:21.498817+00:00",
       "found_at": "2026-06-04T18:47:33.199281+00:00",
-      "raw_sources": [{"platform": "taplink", "url": "https://taplink.cc/gaminator3000"}]
+      "raw_sources": [
+        {
+          "platform": "taplink",
+          "url": "https://taplink.cc/gaminator3000"
+        }
+      ]
     }
   ]
 }
