@@ -55,9 +55,15 @@ BLACKLIST = {
     "DOWNLOAD","INSTALL","UPDATE","LOGIN","REGISTER",
 }
 
-# Short mixed alphanumeric tokens: 3-8 chars, lowercase or uppercase
-# Must contain at least one letter and one digit
-CODE_RE = re.compile(r"(?<![A-Z0-9])([A-Z0-9]{3,8})(?![A-Z0-9])", re.IGNORECASE)
+# Codes appear after context words like "code:", "promo:", "bonus:", etc.
+# Primary pattern: look for codes preceded by a colon or label
+# Also falls back to bare short alphanumeric tokens as secondary pass
+CODE_CONTEXT_RE = re.compile(
+    r'(?:code|promo|bonus|coupon|redeem|gift|reward)[\s:=\-]+([A-Za-z0-9]{3,8})\b',
+    re.IGNORECASE
+)
+# Fallback: bare short mixed-alphanumeric token surrounded by whitespace/punctuation
+CODE_BARE_RE = re.compile(r'(?:^|[\s,;\|\(\[\"\'])([A-Za-z0-9]{3,8})(?=[\s,;\|\)\]\"\']|$)')
 
 
 def now_utc():  return datetime.now(timezone.utc)
@@ -67,9 +73,10 @@ def make_id(game, code): return hashlib.md5(f"{game}:{code}".encode()).hexdigest
 
 def looks_like_code(token: str) -> bool:
     t = token.upper()
-    if t in BLACKLIST:                        return False
-    if t.isdigit():                           return False
-    if t.isalpha() and len(t) > 4:           return False  # plain words
+    if t in BLACKLIST:              return False
+    if t.isdigit():                 return False
+    # pure word longer than 4 chars is likely not a code
+    if t.isalpha() and len(t) > 4: return False
     has_letter = any(c.isalpha() for c in t)
     has_digit  = any(c.isdigit() for c in t)
     return has_letter and has_digit
@@ -78,21 +85,31 @@ def looks_like_code(token: str) -> bool:
 def extract_codes(text: str) -> list[str]:
     if not text:
         return []
-    found = []
-    for m in CODE_RE.findall(text):
-        token = m.strip().upper()
+    found = set()
+
+    # Pass 1: high-confidence — code preceded by label+colon
+    for m in CODE_CONTEXT_RE.finditer(text):
+        token = m.group(1).upper()
         if looks_like_code(token):
-            found.append(token)
-    return sorted(set(found))
+            log.info("  [context match] %s", token)
+            found.add(token)
+
+    # Pass 2: bare tokens (lower confidence, more false positives filtered by looks_like_code)
+    for m in CODE_BARE_RE.finditer(text):
+        token = m.group(1).upper()
+        if looks_like_code(token):
+            found.add(token)
+
+    return sorted(found)
 
 
 def build_item(game, code, platform, url=""):
     return {
-        "id":         make_id(game, code),
-        "game":       game,
-        "code":       code,
-        "sources":    [platform],
-        "found_at":   iso_now(),
+        "id":          make_id(game, code),
+        "game":        game,
+        "code":        code,
+        "sources":     [platform],
+        "found_at":    iso_now(),
         "raw_sources": [{"platform": platform, "url": url}],
     }
 
@@ -143,45 +160,29 @@ def merge_codes(existing, new_items):
     return merged
 
 
-# ---------------------------------------------------------------------------
-# PLAYWRIGHT helpers
-# ---------------------------------------------------------------------------
-
-def pw_get_text(page, url: str, wait_selector: str = None, wait_ms: int = 3000) -> str:
-    """Navigate to url, optionally wait for a selector, return all visible text."""
+def pw_get_text(page, url: str, wait_ms: int = 4000) -> str:
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        if wait_selector:
-            try: page.wait_for_selector(wait_selector, timeout=8000)
-            except PWTimeout: pass
-        else:
-            page.wait_for_timeout(wait_ms)
-        return page.inner_text("body")
+        page.wait_for_timeout(wait_ms)
+        text = page.inner_text("body")
+        log.info("  text sample: %s", text[:300].replace("\n", " "))
+        return text
     except Exception as e:
         log.warning("pw_get_text failed for %s: %s", url, e)
         return ""
 
 
-# ---------------------------------------------------------------------------
-# TAPLINK  (JS-rendered — must use Playwright)
-# ---------------------------------------------------------------------------
-
-def scrape_taplink_pw(page, game: str, url: str) -> list:
-    log.info("[%s] Taplink (PW): %s", game, url)
-    text = pw_get_text(page, url, wait_ms=4000)
-    log.info("[%s] Taplink text sample: %s", game, text[:300])
+def scrape_taplink_pw(page, game, url):
+    log.info("[%s] Taplink: %s", game, url)
+    text = pw_get_text(page, url, wait_ms=5000)
     results = []
     for code in extract_codes(text):
-        log.info("[%s] Taplink found code: %s", game, code)
+        log.info("[%s] Taplink -> %s", game, code)
         results.append(build_item(game, code, "taplink", url))
     return results
 
 
-# ---------------------------------------------------------------------------
-# FACEBOOK  (try mbasic first — plain HTML)
-# ---------------------------------------------------------------------------
-
-def scrape_facebook(game: str, url: str) -> list:
+def scrape_facebook(game, url):
     log.info("[%s] Facebook: %s", game, url)
     results = []
     mbasic = url.replace("www.facebook.com", "mbasic.facebook.com")
@@ -189,50 +190,36 @@ def scrape_facebook(game: str, url: str) -> list:
         resp = requests.get(mbasic, headers=HEADERS, timeout=20)
         soup = BeautifulSoup(resp.text, "html.parser")
         text = soup.get_text(" ", strip=True)
-        log.info("[%s] Facebook text sample: %s", game, text[:200])
+        log.info("[%s] FB sample: %s", game, text[:200])
         for code in extract_codes(text):
-            log.info("[%s] Facebook found code: %s", game, code)
+            log.info("[%s] Facebook -> %s", game, code)
             results.append(build_item(game, code, "facebook", url))
     except Exception as e:
         log.warning("[%s] Facebook failed: %s", game, e)
     return results
 
 
-# ---------------------------------------------------------------------------
-# INSTAGRAM  (JS-rendered — Playwright)
-# ---------------------------------------------------------------------------
-
-def scrape_instagram_pw(page, game: str, username: str) -> list:
-    log.info("[%s] Instagram (PW): @%s", game, username)
+def scrape_instagram_pw(page, game, username):
+    log.info("[%s] Instagram: @%s", game, username)
     url  = f"https://www.instagram.com/{username}/"
     text = pw_get_text(page, url, wait_ms=5000)
-    log.info("[%s] Instagram text sample: %s", game, text[:300])
     results = []
     for code in extract_codes(text):
-        log.info("[%s] Instagram found code: %s", game, code)
+        log.info("[%s] Instagram -> %s", game, code)
         results.append(build_item(game, code, "instagram", url))
     return results
 
 
-# ---------------------------------------------------------------------------
-# TIKTOK  (JS-rendered — Playwright)
-# ---------------------------------------------------------------------------
-
-def scrape_tiktok_pw(page, game: str, username: str) -> list:
-    log.info("[%s] TikTok (PW): @%s", game, username)
+def scrape_tiktok_pw(page, game, username):
+    log.info("[%s] TikTok: @%s", game, username)
     url  = f"https://www.tiktok.com/@{username}"
     text = pw_get_text(page, url, wait_ms=5000)
-    log.info("[%s] TikTok text sample: %s", game, text[:300])
     results = []
     for code in extract_codes(text):
-        log.info("[%s] TikTok found code: %s", game, code)
+        log.info("[%s] TikTok -> %s", game, code)
         results.append(build_item(game, code, "tiktok", url))
     return results
 
-
-# ---------------------------------------------------------------------------
-# MAIN
-# ---------------------------------------------------------------------------
 
 def main():
     existing  = load_existing()
@@ -250,23 +237,19 @@ def main():
         for game, cfg in GAMES.items():
             log.info("=== %s ===", game)
 
-            # Taplink (most reliable for these games)
             if cfg.get("taplink_url"):
                 try: new_items.extend(scrape_taplink_pw(page, game, cfg["taplink_url"]))
                 except Exception as e: log.error("[%s] Taplink error: %s", game, e)
                 time.sleep(2)
 
-            # Facebook
             try: new_items.extend(scrape_facebook(game, cfg["facebook_url"]))
             except Exception as e: log.error("[%s] Facebook error: %s", game, e)
             time.sleep(2)
 
-            # Instagram
             try: new_items.extend(scrape_instagram_pw(page, game, cfg["instagram_user"]))
             except Exception as e: log.error("[%s] Instagram error: %s", game, e)
             time.sleep(2)
 
-            # TikTok
             try: new_items.extend(scrape_tiktok_pw(page, game, cfg["tiktok_user"]))
             except Exception as e: log.error("[%s] TikTok error: %s", game, e)
             time.sleep(2)
@@ -275,7 +258,7 @@ def main():
 
     merged = merge_codes(existing, new_items)
     save_codes(merged)
-    log.info("Done. Total codes: %d  (found this run: %d)", len(merged), len(new_items))
+    log.info("Done. Total: %d  Found this run: %d", len(merged), len(new_items))
 
 
 if __name__ == "__main__":
