@@ -221,7 +221,8 @@ function startCountdown(){
 async function triggerWorkflow(){
   try{
     const res = await fetch(DISPATCH_URL, { method: 'POST' });
-    return res.status === 204;
+    // Accept any 2xx response (200, 204, etc.)
+    return res.ok;
   } catch(e){
     console.warn('Trigger error:', e); return false;
   }
