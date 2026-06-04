@@ -138,10 +138,8 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 
 <script src="./js/firebase.js"></script>
 <script>
-// Button calls /api/trigger (Vercel edge function) — no token in browser
-const DISPATCH_URL   = '/api/trigger';
-const GH_OWNER       = 'Teleskopiss';
-const GH_REPO        = 'PromoCodes';
+// Refresh button calls Cloudflare Worker — no token in browser
+const DISPATCH_URL   = 'https://promocodes-trigger.danielsmez1.workers.dev';
 const CODES_URL      = './codes.json';
 const REFRESH_MS     = 20 * 60 * 1000;
 const NEW_DAYS       = 2;
@@ -171,7 +169,6 @@ const fetchIcon    = document.getElementById('fetchIcon');
 const fetchLabel   = document.getElementById('fetchLabel');
 const themeBtn     = document.getElementById('themeToggle');
 
-// ---------- theme ----------
 let theme = 'dark';
 function setTheme(t){
   theme = t;
@@ -182,11 +179,9 @@ function setTheme(t){
 }
 themeBtn.addEventListener('click', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
 
-// ---------- toast ----------
 let toastTimer;
 function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),2400); }
 
-// ---------- helpers ----------
 function fmtDate(iso){
   if(!iso) return '—';
   const d = new Date(iso);
@@ -207,7 +202,6 @@ function timeAgo(code){
 }
 function isNew(code){ return (Date.now() - new Date(code.post_date||code.found_at).getTime()) < NEW_DAYS*86400000; }
 
-// ---------- countdown + auto-reload ----------
 let countdownTimer = null;
 function startCountdown(){
   clearInterval(countdownTimer);
@@ -224,18 +218,15 @@ function startCountdown(){
   countdownTimer = setInterval(tick, 1000);
 }
 
-// ---------- trigger via Vercel proxy ----------
 async function triggerWorkflow(){
   try{
     const res = await fetch(DISPATCH_URL, { method: 'POST' });
     return res.status === 204;
   } catch(e){
-    console.warn('Trigger error:', e);
-    return false;
+    console.warn('Trigger error:', e); return false;
   }
 }
 
-// ---------- load codes ----------
 async function loadCodes(){
   try{
     const r = await fetch(CODES_URL + '?t=' + Date.now());
@@ -251,7 +242,6 @@ async function loadCodes(){
   render();
 }
 
-// ---------- filter chips ----------
 function buildFilterChips(){
   [...filterScroll.querySelectorAll('[data-filter]:not([data-filter="all"])')].forEach(e=>e.remove());
   [...new Set(allCodes.map(c=>c.game))].forEach(g=>{
@@ -268,7 +258,6 @@ function updateChips(){
   filterScroll.querySelector(`[data-filter="${activeGame}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
 }
 
-// ---------- render ----------
 function render(){
   ['skel1','skel2','skel3'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   let codes = allCodes;
@@ -299,7 +288,6 @@ function buildCard(code){
   const color = GAME_COLORS[code.game] || GAME_COLORS.default;
   const card  = document.createElement('div');
   card.className = 'card' + (used?' used':'');
-
   const srcTags = (code.sources||[]).map(s=>{
     const urlFn = SOURCE_URLS[s];
     const url   = urlFn ? urlFn(code.game) : null;
@@ -308,7 +296,6 @@ function buildCard(code){
       ? `<a class="source-tag" href="${url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${label}</a>`
       : `<span class="source-tag">${label}</span>`;
   }).join('');
-
   card.innerHTML = `
     <div class="card-header">
       <div class="game-badge">
@@ -323,7 +310,6 @@ function buildCard(code){
       <span class="copy-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
     </div>
     <div class="sources-row">${srcTags}</div>`;
-
   const codeRow = card.querySelector('.code-row');
   codeRow.addEventListener('click', ()=>{
     navigator.clipboard.writeText(code.code).then(()=>{
@@ -340,7 +326,6 @@ function buildCard(code){
   return card;
 }
 
-// ---------- tabs ----------
 function setTab(t){
   activeTab = t;
   ['navAll','navNew','navUsed'].forEach(id=>document.getElementById(id).classList.remove('active'));
@@ -352,15 +337,12 @@ document.getElementById('navNew').addEventListener('click', ()=>setTab('new'));
 document.getElementById('navUsed').addEventListener('click', ()=>setTab('used'));
 filterScroll.querySelector('[data-filter="all"]').addEventListener('click', ()=>{ activeGame='all'; updateChips(); render(); });
 
-// ---------- fetch button ----------
 fetchBtn.addEventListener('click', async () => {
   fetchIcon.classList.add('spinning');
   fetchLabel.textContent = 'Starting...';
   fetchBtn.disabled = true;
-
   const ok = await triggerWorkflow();
   fetchIcon.classList.remove('spinning');
-
   if(ok){
     showToast('Scraper started! Reloading in 2m...');
     startCountdown();
@@ -371,10 +353,8 @@ fetchBtn.addEventListener('click', async () => {
   }
 });
 
-// ---------- auto-refresh every 20min ----------
 setInterval(loadCodes, REFRESH_MS);
 
-// ---------- init ----------
 (async()=>{
   usedSet = await loadUsedPromos();
   await loadCodes();
