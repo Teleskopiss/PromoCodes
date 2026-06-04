@@ -62,10 +62,18 @@ BLACKLIST = {
     "HTTPS", "HTTP", "WWW", "COM", "NET", "ORG",
     "FACEBOOK", "INSTAGRAM", "TIKTOK", "GAMINATOR", "SLOTPARK",
     "BONUS", "PROMO", "CODE", "CODES", "SLOTS", "GAMES", "REELS",
-    "STORY", "VIDEO", "POST", "COMMENT", "LINK", "BIO"
+    "STORY", "VIDEO", "POST", "COMMENT", "LINK", "BIO",
+    "FREE", "COINS", "CHIP", "CHIPS", "SPIN", "SPINS",
+    "DAILY", "TODAY", "WEEK", "MONTH", "NEW", "GET", "WIN",
+    "PLAY", "MORE", "JOIN", "LIKE", "SHARE", "FOLLOW",
 }
 
-CODE_PATTERN = re.compile(r"\b[A-Z0-9][A-Z0-9_-]{4,19}\b")
+# Promo codes for these games are short alphanumeric tokens:
+# - 3 to 8 characters
+# - mix of letters and digits (not purely numeric, not purely alpha if >4 chars)
+# - lowercase or uppercase, stored uppercase
+# Examples: k8n95, mnv5, AB12C, X7Y2Z
+CODE_PATTERN = re.compile(r"\b([A-Z0-9]{3,8})\b")
 
 
 def now_utc():
@@ -84,6 +92,17 @@ def normalize_code(code: str) -> str:
     return code.strip().upper()
 
 
+def looks_like_promo(code: str) -> bool:
+    """Heuristic: a real promo code has both letters and digits mixed in."""
+    has_letter = any(c.isalpha() for c in code)
+    has_digit  = any(c.isdigit() for c in code)
+    # 3-4 char codes: just need to be alphanumeric mix
+    # 5-8 char codes: must have both letters and digits
+    if len(code) <= 4:
+        return has_letter and has_digit
+    return has_letter and has_digit
+
+
 def extract_codes(text: str) -> list[str]:
     if not text:
         return []
@@ -93,9 +112,12 @@ def extract_codes(text: str) -> list[str]:
         m = normalize_code(m)
         if m in BLACKLIST:
             continue
-        if len(m) < 5:
-            continue
         if m.isdigit():
+            continue
+        if m.isalpha() and len(m) > 4:
+            # Pure word longer than 4 chars — likely not a code
+            continue
+        if not looks_like_promo(m):
             continue
         out.append(m)
     return sorted(set(out))
@@ -112,10 +134,24 @@ def load_existing():
 
 
 def save_codes(items: list[dict]):
+    # Also write a metadata wrapper so the frontend knows when it was last updated
+    output = {
+        "updated_at": iso_now(),
+        "codes": items
+    }
     OUTPUT_FILE.write_text(
-        json.dumps(items, ensure_ascii=False, indent=2),
+        json.dumps(output, ensure_ascii=False, indent=2),
         encoding="utf-8"
     )
+
+
+def load_codes_list(data) -> list[dict]:
+    """Handle both old flat list and new {updated_at, codes} format."""
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return data.get("codes", [])
+    return []
 
 
 def merge_codes(existing: list[dict], new_items: list[dict]) -> list[dict]:
@@ -352,7 +388,8 @@ def scrape_tiktok(game: str, username: str) -> list[dict]:
 
 
 def main():
-    existing = load_existing()
+    raw = load_existing()
+    existing = load_codes_list(raw)
     new_items = []
 
     for game, cfg in GAMES.items():

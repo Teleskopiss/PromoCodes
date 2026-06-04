@@ -2,12 +2,12 @@ name: Scrape Promo Codes
 
 on:
   schedule:
-    # Runs every 6 hours
-    - cron: "0 */6 * * *"
-  workflow_dispatch: # allows manual trigger from GitHub UI
+    # Runs every 20 minutes
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write # needed to commit codes.json back to repo
+  contents: write
 
 jobs:
   scrape:

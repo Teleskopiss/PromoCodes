@@ -8,447 +8,250 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PromoRadar</title>
 
-<!-- Firebase (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ── TOKENS ─────────────────────────────────────────────────── */
 :root {
-  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
-  --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
-  --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
-  --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
-  --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
-
-  --space-1:  0.25rem; --space-2:  0.5rem;  --space-3:  0.75rem;
-  --space-4:  1rem;    --space-5:  1.25rem; --space-6:  1.5rem;
-  --space-8:  2rem;    --space-10: 2.5rem;  --space-12: 3rem;
-  --space-16: 4rem;
-
-  --radius-sm: 0.375rem; --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;  --radius-xl: 1rem; --radius-full: 9999px;
-  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  --font-body: 'Inter', system-ui, sans-serif;
-
-  /* Bottom nav safe area */
-  --nav-h: calc(4rem + env(safe-area-inset-bottom));
+  --text-xs:   clamp(0.7rem,  0.65rem + 0.25vw, 0.8rem);
+  --text-sm:   clamp(0.8rem,  0.75rem + 0.3vw,  0.9rem);
+  --text-base: clamp(0.875rem,0.82rem + 0.25vw, 1rem);
+  --text-lg:   clamp(1rem,    0.9rem  + 0.5vw,  1.25rem);
+  --space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;
+  --space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;
+  --space-8:2rem;--space-12:3rem;--space-16:4rem;
+  --radius-sm:0.3rem;--radius-md:0.45rem;
+  --radius-lg:0.65rem;--radius-xl:0.875rem;--radius-full:9999px;
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+  --font:'Inter',system-ui,sans-serif;
+  --nav-h:calc(3.5rem + env(safe-area-inset-bottom));
 }
-
-/* ── DARK (default) ─────────────────────────────────────────── */
-:root, [data-theme="dark"] {
-  --bg:          #0f0f10;
-  --surface:     #1a1a1c;
-  --surface-2:   #222225;
-  --surface-3:   #2a2a2e;
-  --border:      rgba(255,255,255,0.08);
-  --divider:     rgba(255,255,255,0.06);
-  --text:        #e8e8ea;
-  --text-muted:  #8a8a90;
-  --text-faint:  #52525a;
-  --primary:     #6c8cff;
-  --primary-dim: rgba(108,140,255,0.15);
-  --success:     #4ade80;
-  --success-dim: rgba(74,222,128,0.12);
-  --warning:     #fb923c;
-  --warning-dim: rgba(251,146,60,0.12);
-  --shadow-md:   0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:   0 8px 32px rgba(0,0,0,0.5);
+:root,[data-theme="dark"]{
+  --bg:#0f0f10;--surface:#1a1a1c;--surface-2:#222225;
+  --surface-3:#2a2a2e;--border:rgba(255,255,255,0.08);
+  --divider:rgba(255,255,255,0.05);--text:#e8e8ea;
+  --text-muted:#8a8a90;--text-faint:#52525a;
+  --primary:#6c8cff;--primary-dim:rgba(108,140,255,0.14);
+  --success:#4ade80;--success-dim:rgba(74,222,128,0.12);
+  --shadow:0 3px 12px rgba(0,0,0,0.4);
 }
-
-/* ── LIGHT ──────────────────────────────────────────────────── */
-[data-theme="light"] {
-  --bg:          #f4f4f6;
-  --surface:     #ffffff;
-  --surface-2:   #f9f9fb;
-  --surface-3:   #f0f0f3;
-  --border:      rgba(0,0,0,0.08);
-  --divider:     rgba(0,0,0,0.06);
-  --text:        #18181b;
-  --text-muted:  #71717a;
-  --text-faint:  #a1a1aa;
-  --primary:     #4f6ef7;
-  --primary-dim: rgba(79,110,247,0.1);
-  --success:     #16a34a;
-  --success-dim: rgba(22,163,74,0.1);
-  --warning:     #ea580c;
-  --warning-dim: rgba(234,88,12,0.1);
-  --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
-  --shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
+[data-theme="light"]{
+  --bg:#f2f2f4;--surface:#fff;--surface-2:#f7f7f9;
+  --surface-3:#efeff2;--border:rgba(0,0,0,0.08);
+  --divider:rgba(0,0,0,0.05);--text:#18181b;
+  --text-muted:#71717a;--text-faint:#a1a1aa;
+  --primary:#4f6ef7;--primary-dim:rgba(79,110,247,0.1);
+  --success:#16a34a;--success-dim:rgba(22,163,74,0.1);
+  --shadow:0 3px 12px rgba(0,0,0,0.07);
 }
-
-/* ── BASE ───────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: none; text-size-adjust: none; scroll-behavior: smooth; }
-body {
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  color: var(--text);
-  background: var(--bg);
-  min-height: 100dvh;
-  overscroll-behavior: none;
-  -webkit-font-smoothing: antialiased;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth;}
+body{
+  font-family:var(--font);font-size:var(--text-base);
+  color:var(--text);background:var(--bg);
+  min-height:100dvh;overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
 }
-img { display: block; max-width: 100%; }
-button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
-a { color: inherit; text-decoration: none; }
-ul { list-style: none; }
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
+ul{list-style:none;}
+.app{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:var(--nav-h);}
 
-/* ── LAYOUT ─────────────────────────────────────────────────── */
-.app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
-  padding-bottom: var(--nav-h);
+/* TOP BAR */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:var(--space-2) var(--space-4);
+  padding-top:calc(var(--space-2) + env(safe-area-inset-top));
+  display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
-
-/* ── TOP BAR ────────────────────────────────────────────────── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: var(--space-3) var(--space-4);
-  padding-top: calc(var(--space-3) + env(safe-area-inset-top));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.topbar-logo{
+  display:flex;align-items:center;gap:var(--space-2);
+  font-size:var(--text-base);font-weight:700;letter-spacing:-0.02em;
 }
+.logo-icon{
+  width:26px;height:26px;background:var(--primary);
+  border-radius:var(--radius-md);display:flex;
+  align-items:center;justify-content:center;font-size:13px;
+}
+.topbar-right{display:flex;align-items:center;gap:var(--space-2);}
+.updated-row{
+  display:flex;align-items:center;gap:var(--space-2);
+  font-size:var(--text-xs);color:var(--text-faint);
+}
+#updatedText{white-space:nowrap;}
+.icon-btn{
+  width:32px;height:32px;border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);transition:background var(--transition),color var(--transition);
+  -webkit-tap-highlight-color:transparent;
+  flex-shrink:0;
+}
+.icon-btn:active{background:var(--surface-3);color:var(--text);}
 
-.topbar-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-base);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
+/* FILTER CHIPS */
+.filter-bar{
+  position:sticky;top:calc(42px + env(safe-area-inset-top));
+  z-index:90;background:var(--bg);
+  padding:var(--space-2) 0;border-bottom:1px solid var(--divider);
+}
+.filter-scroll{
+  display:flex;gap:var(--space-2);padding:0 var(--space-4);
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.filter-scroll::-webkit-scrollbar{display:none;}
+.chip{
+  flex-shrink:0;padding:3px var(--space-3);
+  border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--text-muted);transition:all var(--transition);
+  white-space:nowrap;-webkit-tap-highlight-color:transparent;
+  cursor:pointer;user-select:none;
+}
+.chip.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
+
+/* MAIN */
+.main{flex:1;padding:var(--space-3) var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);}
+.section-label{
+  font-size:var(--text-xs);font-weight:600;
+  text-transform:uppercase;letter-spacing:0.06em;
+  color:var(--text-faint);padding:0 var(--space-1);
+  margin-top:var(--space-1);
 }
 
-.logo-icon {
-  width: 28px;
-  height: 28px;
-  background: var(--primary);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
+/* CARD */
+.card{
+  background:var(--surface);border-radius:var(--radius-xl);
+  border:1px solid var(--border);padding:var(--space-3);
+  display:flex;flex-direction:column;gap:var(--space-2);
+  box-shadow:var(--shadow);
+  transition:transform var(--transition),opacity var(--transition);
+  -webkit-tap-highlight-color:transparent;
 }
+.card.used{opacity:0.4;}
+.card-header{
+  display:flex;align-items:center;
+  justify-content:space-between;gap:var(--space-2);
+}
+.game-badge{
+  display:flex;align-items:center;gap:6px;
+  font-size:var(--text-sm);font-weight:600;
+}
+.game-dot{width:7px;height:7px;border-radius:var(--radius-full);flex-shrink:0;}
+.age-badge{font-size:var(--text-xs);color:var(--text-faint);flex-shrink:0;}
 
-.topbar-actions { display: flex; align-items: center; gap: var(--space-2); }
+/* CODE ROW */
+.code-row{
+  display:flex;align-items:center;gap:var(--space-2);
+  background:var(--surface-3);border-radius:var(--radius-lg);
+  padding:var(--space-2) var(--space-3);
+  border:1px solid var(--border);cursor:pointer;
+  transition:all var(--transition);
+  -webkit-tap-highlight-color:transparent;
+}
+.code-row:active{transform:scale(0.97);}
+.code-row.copied{background:var(--success-dim);border-color:var(--success);}
+.code-text{
+  flex:1;font-family:'Courier New',monospace;
+  font-size:var(--text-lg);font-weight:700;
+  letter-spacing:0.06em;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;
+}
+.card.used .code-text{text-decoration:line-through;color:var(--text-faint);}
+.copy-icon{
+  flex-shrink:0;width:32px;height:32px;
+  border-radius:var(--radius-md);background:var(--primary-dim);
+  color:var(--primary);display:flex;align-items:center;
+  justify-content:center;transition:all var(--transition);
+}
+.code-row.copied .copy-icon{background:var(--success-dim);color:var(--success);}
 
-.icon-btn {
-  width: 36px; height: 36px;
-  border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted);
-  transition: background var(--transition), color var(--transition);
-  -webkit-tap-highlight-color: transparent;
+/* SOURCES */
+.sources-row{
+  display:flex;flex-wrap:wrap;gap:var(--space-1);align-items:center;
 }
-.icon-btn:active { background: var(--surface-3); color: var(--text); }
+.source-tag{
+  font-size:var(--text-xs);padding:2px var(--space-2);
+  border-radius:var(--radius-full);border:1px solid var(--border);
+  color:var(--primary);background:var(--primary-dim);
+  cursor:pointer;transition:all var(--transition);
+  -webkit-tap-highlight-color:transparent;
+  text-decoration:none;display:inline-flex;align-items:center;gap:3px;
+}
+.source-tag:active{opacity:0.7;}
 
-/* ── FILTER CHIPS ───────────────────────────────────────────── */
-.filter-bar {
-  position: sticky;
-  top: calc(52px + env(safe-area-inset-top));
-  z-index: 90;
-  background: var(--bg);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--divider);
+/* EMPTY */
+.empty{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;
+  padding:var(--space-16) var(--space-8);gap:var(--space-3);
 }
-.filter-scroll {
-  display: flex;
-  gap: var(--space-2);
-  padding: 0 var(--space-4);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.filter-scroll::-webkit-scrollbar { display: none; }
+.empty-icon{font-size:2rem;opacity:0.35;}
+.empty h3{font-size:var(--text-base);font-weight:600;}
+.empty p{font-size:var(--text-sm);color:var(--text-muted);max-width:26ch;}
 
-.chip {
-  flex-shrink: 0;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-muted);
-  transition: all var(--transition);
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
-  user-select: none;
+/* SKELETON */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{
+  background:linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite;
+  border-radius:var(--radius-md);
 }
-.chip:active, .chip.active {
-  background: var(--primary-dim);
-  border-color: var(--primary);
-  color: var(--primary);
+.skel-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-xl);padding:var(--space-3);
+  display:flex;flex-direction:column;gap:var(--space-2);
 }
+.skel-line{height:12px;} .skel-code{height:36px;border-radius:var(--radius-lg);}
+.skel-tags{display:flex;gap:var(--space-2);} .skel-tag{height:20px;width:65px;}
 
-/* ── MAIN CONTENT ───────────────────────────────────────────── */
-.main { flex: 1; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);border-top:1px solid var(--border);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:var(--space-1) 0;gap:2px;
+  font-size:var(--text-xs);color:var(--text-faint);
+  transition:color var(--transition);
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;min-height:52px;
+}
+.nav-item.active{color:var(--primary);}
+.nav-item svg{width:20px;height:20px;}
 
-/* ── SECTION HEADER ─────────────────────────────────────────── */
-.section-label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-  padding: 0 var(--space-1);
-  margin-top: var(--space-2);
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:calc(var(--nav-h) + var(--space-3));
+  left:50%;transform:translateX(-50%) translateY(6px);
+  background:var(--text);color:var(--bg);
+  padding:var(--space-2) var(--space-4);
+  border-radius:var(--radius-full);
+  font-size:var(--text-sm);font-weight:600;
+  white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity 0.18s,transform 0.18s;z-index:200;
 }
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* ── PROMO CARD ─────────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  box-shadow: var(--shadow-md);
-  transition: transform var(--transition), box-shadow var(--transition);
-  -webkit-tap-highlight-color: transparent;
-}
-.card:active { transform: scale(0.985); box-shadow: none; }
-.card.used { opacity: 0.45; }
+/* SCRAPE BTN pulse */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinning{animation:spin 0.6s ease forwards;}
 
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.game-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text);
-}
-
-.game-dot {
-  width: 8px; height: 8px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
-.age-badge {
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-  flex-shrink: 0;
-}
-
-/* ── CODE ROW ───────────────────────────────────────────────── */
-.code-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  background: var(--surface-3);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
-}
-
-.code-text {
-  flex: 1;
-  font-family: 'Courier New', monospace;
-  font-size: var(--text-lg);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.card.used .code-text { text-decoration: line-through; color: var(--text-faint); }
-
-.copy-btn {
-  flex-shrink: 0;
-  width: 40px; height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--primary-dim);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition);
-}
-.copy-btn:active { background: var(--primary); color: #fff; transform: scale(0.92); }
-.copy-btn.copied { background: var(--success-dim); color: var(--success); }
-
-/* ── SOURCES ROW ────────────────────────────────────────────── */
-.sources-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  align-items: center;
-}
-
-.source-tag {
-  font-size: var(--text-xs);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  background: var(--surface-2);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* ── USED BUTTON ────────────────────────────────────────────── */
-.used-btn {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  text-align: center;
-  transition: all var(--transition);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  background: transparent;
-}
-.used-btn:active { background: var(--surface-3); }
-.card.used .used-btn {
-  background: var(--success-dim);
-  border-color: var(--success);
-  color: var(--success);
-}
-
-/* ── EMPTY STATE ────────────────────────────────────────────── */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--space-16) var(--space-8);
-  gap: var(--space-3);
-  color: var(--text-muted);
-}
-.empty-icon { font-size: 2.5rem; opacity: 0.4; }
-.empty h3 { font-size: var(--text-base); font-weight: 600; color: var(--text); }
-.empty p { font-size: var(--text-sm); color: var(--text-muted); max-width: 28ch; }
-
-/* ── SKELETON ───────────────────────────────────────────────── */
-@keyframes shimmer {
-  0%  { background-position: -200% 0; }
-  100%{ background-position:  200% 0; }
-}
-.skeleton {
-  background: linear-gradient(90deg,
-    var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
-  border-radius: var(--radius-md);
-}
-.skel-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.skel-line { height: 14px; }
-.skel-code { height: 40px; border-radius: var(--radius-lg); }
-.skel-tags { display:flex; gap:var(--space-2); }
-.skel-tag  { height:22px; width:70px; }
-
-/* ── BOTTOM NAV ─────────────────────────────────────────────── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 100;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  padding-bottom: env(safe-area-inset-bottom);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-2) 0;
-  gap: 3px;
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-  transition: color var(--transition);
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
-  min-height: 56px;
-}
-.nav-item.active { color: var(--primary); }
-.nav-item svg { width:22px; height:22px; }
-
-/* ── TOAST ──────────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: calc(var(--nav-h) + var(--space-4));
-  left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  background: var(--text);
-  color: var(--bg);
-  padding: var(--space-2) var(--space-5);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.2s;
-  z-index: 200;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-/* ── REFRESH INDICATOR ──────────────────────────────────────── */
-.refresh-dot {
-  width: 6px; height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--success);
-  display: none;
-}
-.refresh-dot.pulse {
-  display: block;
-  animation: pulse 1s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
-
-/* ── REDUCED MOTION ─────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}
 }
 </style>
 </head>
 <body>
-
 <div class="app">
 
   <!-- TOP BAR -->
@@ -457,17 +260,19 @@ ul { list-style: none; }
       <div class="logo-icon">&#127920;</div>
       PromoRadar
     </div>
-    <div class="topbar-actions">
-      <div class="refresh-dot" id="refreshDot"></div>
+    <div class="topbar-right">
+      <div class="updated-row">
+        <span id="updatedText">Loading...</span>
+        <button class="icon-btn" id="scrapeBtn" aria-label="Run scraper now" title="Refresh data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
       <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      </button>
-      <button class="icon-btn" id="refreshBtn" aria-label="Refresh">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
       </button>
     </div>
@@ -477,13 +282,11 @@ ul { list-style: none; }
   <div class="filter-bar">
     <div class="filter-scroll" id="filterScroll">
       <button class="chip active" data-filter="all">All games</button>
-      <!-- game chips injected here -->
     </div>
   </div>
 
   <!-- CONTENT -->
   <main class="main" id="main">
-    <!-- skeleton on load -->
     <div class="skel-card" id="skel1">
       <div class="skel-line skeleton" style="width:40%"></div>
       <div class="skel-code skeleton"></div>
@@ -504,22 +307,22 @@ ul { list-style: none; }
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav" role="navigation" aria-label="Main">
-  <button class="nav-item active" id="navAll" aria-label="All codes">
+<nav class="bottom-nav" role="navigation">
+  <button class="nav-item active" id="navAll" aria-label="All">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
     </svg>
     All
   </button>
-  <button class="nav-item" id="navNew" aria-label="New codes">
+  <button class="nav-item" id="navNew" aria-label="New">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10"/>
       <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
     </svg>
     New
   </button>
-  <button class="nav-item" id="navUsed" aria-label="Used codes">
+  <button class="nav-item" id="navUsed" aria-label="Used">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="20 6 9 17 4 12"/>
     </svg>
@@ -527,286 +330,266 @@ ul { list-style: none; }
   </button>
 </nav>
 
-<!-- TOAST -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- Firebase + app logic -->
 <script src="./js/firebase.js"></script>
 <script>
-/* ── CONFIG ────────────────────────────────────────────────── */
-const CODES_URL   = './codes.json';
-const REFRESH_MS  = 5 * 60 * 1000;
-const NEW_DAYS    = 2;
+const CODES_URL  = './codes.json';
+const REFRESH_MS = 20 * 60 * 1000;
+const NEW_DAYS   = 2;
 
-/* ── GAME PALETTE ───────────────────────────────────────────── */
-const GAME_COLORS = {
-  gaminator: '#6c8cff',
-  slotpark:  '#fb923c',
-  default:   '#a78bfa',
+const GAME_COLORS = { gaminator:'#6c8cff', slotpark:'#fb923c', default:'#a78bfa' };
+const GAME_NAMES  = { gaminator:'Gaminator', slotpark:'Slotpark' };
+const SOURCE_LABELS = {
+  'facebook post':'Facebook','facebook comment':'FB comment',
+  'instagram post':'Instagram','instagram comment':'IG comment',
+  'instagram bio':'IG bio','tiktok post':'TikTok',
+  'tiktok bio':'TikTok bio','taplink':'Taplink',
 };
-function gameColor(g) { return GAME_COLORS[g] || GAME_COLORS.default; }
+const SOURCE_URLS = {
+  'facebook post':    g => GAME_CONFIGS[g]?.facebook_url  || 'https://facebook.com',
+  'facebook comment': g => GAME_CONFIGS[g]?.facebook_url  || 'https://facebook.com',
+  'instagram post':   g => `https://www.instagram.com/${GAME_CONFIGS[g]?.instagram_user || ''}/`,
+  'instagram comment':g => `https://www.instagram.com/${GAME_CONFIGS[g]?.instagram_user || ''}/`,
+  'instagram bio':    g => `https://www.instagram.com/${GAME_CONFIGS[g]?.instagram_user || ''}/`,
+  'tiktok post':      g => `https://www.tiktok.com/@${GAME_CONFIGS[g]?.tiktok_user || ''}`,
+  'tiktok bio':       g => `https://www.tiktok.com/@${GAME_CONFIGS[g]?.tiktok_user || ''}`,
+  'taplink':          g => GAME_CONFIGS[g]?.taplink_url   || 'https://taplink.cc',
+};
+// Mirror of Python GAMES dict so JS can build source URLs
+const GAME_CONFIGS = {
+  gaminator:{ facebook_url:'https://www.facebook.com/share/1BJaeBaKWZ/', instagram_user:'gaminator', tiktok_user:'gaminator3000', taplink_url:'https://taplink.cc/gaminator3000' },
+  slotpark: { facebook_url:'https://www.facebook.com/share/1U86tJdyE9/', instagram_user:'slotpark',  tiktok_user:'slotparkslots', taplink_url:null },
+};
 
-/* ── GAME DISPLAY NAMES ─────────────────────────────────────── */
-const GAME_NAMES = {
-  gaminator: 'Gaminator',
-  slotpark:  'Slotpark',
-};
-function gameName(g) {
-  return GAME_NAMES[g] || (g.charAt(0).toUpperCase() + g.slice(1));
+function gameColor(g){ return GAME_COLORS[g]||GAME_COLORS.default; }
+function gameName(g){ return GAME_NAMES[g]||(g.charAt(0).toUpperCase()+g.slice(1)); }
+function srcLabel(s){ return SOURCE_LABELS[s]||s; }
+function srcUrl(platform, game){
+  const fn = SOURCE_URLS[platform];
+  return fn ? fn(game) : null;
 }
 
-/* ── SOURCE LABELS ──────────────────────────────────────────── */
-const SOURCE_LABELS = {
-  'facebook post':    'Facebook',
-  'facebook comment': 'FB comment',
-  'instagram post':   'Instagram',
-  'instagram comment':'IG comment',
-  'instagram bio':    'IG bio',
-  'tiktok post':      'TikTok',
-  'tiktok bio':       'TikTok bio',
-  'taplink':          'Taplink',
-};
-function sourceLabel(s) { return SOURCE_LABELS[s] || s; }
-
-/* ── STATE ──────────────────────────────────────────────────── */
 let allCodes   = [];
 let usedSet    = new Set();
 let activeGame = 'all';
 let activeTab  = 'all';
+let lastUpdated = null;
 
-/* ── DOM REFS ───────────────────────────────────────────────── */
-const mainEl      = document.getElementById('main');
-const filterScroll= document.getElementById('filterScroll');
-const toast       = document.getElementById('toast');
-const refreshDot  = document.getElementById('refreshDot');
+const mainEl       = document.getElementById('main');
+const filterScroll = document.getElementById('filterScroll');
+const toast        = document.getElementById('toast');
+const updatedText  = document.getElementById('updatedText');
 
-/* ── THEME ──────────────────────────────────────────────────── */
+// THEME
 const themeBtn = document.getElementById('themeToggle');
-let theme = document.documentElement.getAttribute('data-theme') || 'dark';
-function setTheme(t) {
+let theme = 'dark';
+function setTheme(t){
   theme = t;
   document.documentElement.setAttribute('data-theme', t);
-  themeBtn.setAttribute('aria-label', `Switch to ${t === 'dark' ? 'light' : 'dark'} mode`);
-  themeBtn.innerHTML = t === 'dark'
-    ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
-    : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  themeBtn.innerHTML = t==='dark'
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 }
-themeBtn.addEventListener('click', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
+themeBtn.addEventListener('click',()=>setTheme(theme==='dark'?'light':'dark'));
 
-/* ── TOAST ──────────────────────────────────────────────────── */
+// TOAST
 let toastTimer;
-function showToast(msg) {
-  toast.textContent = msg;
+function showToast(msg){
+  toast.textContent=msg;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  toastTimer=setTimeout(()=>toast.classList.remove('show'),1800);
 }
 
-/* ── TIME AGO ───────────────────────────────────────────────── */
-function timeAgo(iso) {
+// FORMAT DATE
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  const yr  = d.getFullYear();
+  const mo  = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  const hh  = String(d.getHours()).padStart(2,'0');
+  const mm  = String(d.getMinutes()).padStart(2,'0');
+  return `${yr}.${mo}.${day} ${hh}:${mm}`;
+}
+
+function timeAgo(iso){
   const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 60)   return m < 2 ? 'just now' : `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24)   return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  const m = Math.floor(diff/60000);
+  if(m<60) return m<2?'just now':`${m}m ago`;
+  const h = Math.floor(m/60);
+  if(h<24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
 }
 
-function isNew(iso) {
-  return (Date.now() - new Date(iso).getTime()) < NEW_DAYS * 86400000;
-}
+function isNew(iso){ return (Date.now()-new Date(iso).getTime()) < NEW_DAYS*86400000; }
 
-/* ── LOAD CODES ─────────────────────────────────────────────── */
-async function loadCodes() {
-  refreshDot.classList.add('pulse');
-  try {
-    const r = await fetch(CODES_URL + '?t=' + Date.now());
-    if (!r.ok) throw new Error(r.status);
-    allCodes = await r.json();
-  } catch(e) {
-    if (!allCodes.length) showToast('Could not load codes');
-  } finally {
-    refreshDot.classList.remove('pulse');
-    buildFilterChips();
-    render();
+// LOAD
+async function loadCodes(){
+  try{
+    const r = await fetch(CODES_URL+'?t='+Date.now());
+    if(!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    // Support both {updated_at, codes} and legacy flat array
+    if(Array.isArray(data)){
+      allCodes = data;
+      lastUpdated = null;
+    } else {
+      allCodes = data.codes || [];
+      lastUpdated = data.updated_at || null;
+    }
+  } catch(e){
+    if(!allCodes.length) showToast('Could not load codes');
   }
+  updatedText.textContent = lastUpdated
+    ? 'Updated: '+fmtDate(lastUpdated)
+    : 'Updated: —';
+  buildFilterChips();
+  render();
 }
 
-/* ── FILTER CHIPS ───────────────────────────────────────────── */
-function buildFilterChips() {
-  const games = [...new Set(allCodes.map(c => c.game))];
-  [...filterScroll.querySelectorAll('[data-filter]:not([data-filter="all"])')].forEach(el => el.remove());
-  games.forEach(g => {
-    const btn = document.createElement('button');
-    btn.className = 'chip' + (activeGame === g ? ' active' : '');
-    btn.dataset.filter = g;
-    btn.textContent = gameName(g);
-    btn.addEventListener('click', () => { activeGame = g; updateChips(); render(); });
+// FILTER CHIPS
+function buildFilterChips(){
+  const games = [...new Set(allCodes.map(c=>c.game))];
+  [...filterScroll.querySelectorAll('[data-filter]:not([data-filter="all"])')].forEach(e=>e.remove());
+  games.forEach(g=>{
+    const btn=document.createElement('button');
+    btn.className='chip'+(activeGame===g?' active':'');
+    btn.dataset.filter=g;
+    btn.textContent=gameName(g);
+    btn.addEventListener('click',()=>{activeGame=g;updateChips();render();});
     filterScroll.appendChild(btn);
   });
 }
-
-function updateChips() {
-  filterScroll.querySelectorAll('.chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.filter === activeGame);
+function updateChips(){
+  filterScroll.querySelectorAll('.chip').forEach(c=>{
+    c.classList.toggle('active',c.dataset.filter===activeGame);
   });
-  filterScroll.querySelector(`[data-filter="${activeGame}"]`)?.scrollIntoView({
-    behavior:'smooth', block:'nearest', inline:'center'
-  });
+  filterScroll.querySelector(`[data-filter="${activeGame}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
 }
 
-/* ── RENDER ─────────────────────────────────────────────────── */
-function render() {
-  ['skel1','skel2','skel3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-  });
-
+// RENDER
+function render(){
+  ['skel1','skel2','skel3'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   let codes = allCodes;
-  if (activeGame !== 'all') codes = codes.filter(c => c.game === activeGame);
-  if (activeTab === 'new')  codes = codes.filter(c => isNew(c.found_at));
-  if (activeTab === 'used') codes = codes.filter(c => usedSet.has(c.id));
-
-  mainEl.innerHTML = '';
-
-  if (!codes.length) {
-    mainEl.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">&#127967;</div>
-        <h3>No codes here</h3>
-        <p>${activeTab === 'used' ? "You haven't used any codes yet." : 'No promo codes found. Pull to refresh.'}</p>
-      </div>`;
+  if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
+  if(activeTab==='new')  codes=codes.filter(c=>isNew(c.found_at));
+  if(activeTab==='used') codes=codes.filter(c=>usedSet.has(c.id));
+  mainEl.innerHTML='';
+  if(!codes.length){
+    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${activeTab==='used'?"No used codes yet.":'No promo codes found.'}</p></div>`;
     return;
   }
-
-  const byGame = {};
-  codes.forEach(c => { (byGame[c.game] = byGame[c.game] || []).push(c); });
-
-  Object.entries(byGame).forEach(([game, items]) => {
-    if (activeGame === 'all') {
-      const label = document.createElement('p');
-      label.className = 'section-label';
-      label.textContent = gameName(game);
-      mainEl.appendChild(label);
+  const byGame={};
+  codes.forEach(c=>{(byGame[c.game]=byGame[c.game]||[]).push(c);});
+  Object.entries(byGame).forEach(([game,items])=>{
+    if(activeGame==='all'){
+      const lbl=document.createElement('p');
+      lbl.className='section-label';
+      lbl.textContent=gameName(game);
+      mainEl.appendChild(lbl);
     }
-    items.forEach(code => mainEl.appendChild(buildCard(code)));
+    items.forEach(code=>mainEl.appendChild(buildCard(code)));
   });
 }
 
-/* ── BUILD CARD ─────────────────────────────────────────────── */
-function buildCard(code) {
+// BUILD CARD
+function buildCard(code){
   const used  = usedSet.has(code.id);
   const _new  = isNew(code.found_at);
   const color = gameColor(code.game);
+  const card  = document.createElement('div');
+  card.className='card'+(used?' used':'');
+  card.id='card-'+code.id;
+  const sources = code.sources||[];
 
-  const card = document.createElement('div');
-  card.className = 'card' + (used ? ' used' : '');
-  card.id = 'card-' + code.id;
+  // Build source tags HTML — each is a link if URL known
+  const srcTags = sources.map(s=>{
+    const url = srcUrl(s, code.game);
+    const label = srcLabel(s);
+    if(url){
+      return `<a class="source-tag" href="${url}" target="_blank" rel="noopener noreferrer">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        ${label}
+      </a>`;
+    }
+    return `<span class="source-tag">${label}</span>`;
+  }).join('');
 
-  const sources = code.sources || [];
-
-  card.innerHTML = `
+  card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
         <span class="game-dot" style="background:${color}"></span>
         ${gameName(code.game)}
-        ${_new && !used ? '<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>' : ''}
+        ${_new&&!used?'<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>':''}
       </div>
       <span class="age-badge">${timeAgo(code.found_at)}</span>
     </div>
-
-    <div class="code-row">
+    <div class="code-row" id="coderow-${code.id}">
       <span class="code-text">${code.code}</span>
-      <button class="copy-btn" aria-label="Copy code ${code.code}" data-id="${code.id}">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      <span class="copy-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
-      </button>
+      </span>
     </div>
-
-    <div class="sources-row">
-      ${sources.map(s => `<span class="source-tag">${sourceLabel(s)}</span>`).join('')}
-    </div>
-
-    <button class="used-btn" data-id="${code.id}">
-      ${used ? '&#10003; Marked as used' : 'Mark as used'}
-    </button>
+    <div class="sources-row">${srcTags}</div>
   `;
 
-  card.querySelector('.copy-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(code.code).then(() => {
-      const btn = card.querySelector('.copy-btn');
-      btn.classList.add('copied');
-      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+  // Tap the code row = copy + mark used
+  const codeRow = card.querySelector('.code-row');
+  codeRow.addEventListener('click', ()=>{
+    navigator.clipboard.writeText(code.code).then(()=>{
+      codeRow.classList.add('copied');
+      codeRow.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
       showToast('Copied!');
-      setTimeout(() => {
-        btn.classList.remove('copied');
-        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-      }, 1500);
-    }).catch(() => showToast('Long-press to copy'));
-  });
-
-  card.querySelector('.used-btn').addEventListener('click', () => {
-    if (usedSet.has(code.id)) {
-      const voterId = getVoterId();
-      db.ref(`usedPromoCodes/${voterId}/${code.id}`).remove().catch(() => {});
-      usedSet.delete(code.id);
-      showToast('Unmarked');
-    } else {
-      markPromoUsed(code.id);
-      usedSet.add(code.id);
-      showToast('Marked as used \u2713');
-    }
-    render();
+      setTimeout(()=>{
+        codeRow.classList.remove('copied');
+        codeRow.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+      }, 1400);
+      // Mark as used in Firebase
+      if(!usedSet.has(code.id)){
+        markPromoUsed(code.id);
+        usedSet.add(code.id);
+        setTimeout(()=>render(), 1600);
+      }
+    }).catch(()=>showToast('Long-press to copy'));
   });
 
   return card;
 }
 
-/* ── BOTTOM NAV ─────────────────────────────────────────────── */
-function setTab(tab) {
-  activeTab = tab;
-  ['navAll','navNew','navUsed'].forEach(id => {
-    document.getElementById(id).classList.remove('active');
-  });
-  const map = { all:'navAll', new:'navNew', used:'navUsed' };
-  document.getElementById(map[tab]).classList.add('active');
+// BOTTOM NAV
+function setTab(tab){
+  activeTab=tab;
+  ['navAll','navNew','navUsed'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ({all:'navAll',new:'navNew',used:'navUsed'})[tab] && document.getElementById(({all:'navAll',new:'navNew',used:'navUsed'})[tab]).classList.add('active');
   render();
 }
-document.getElementById('navAll').addEventListener('click',  () => setTab('all'));
-document.getElementById('navNew').addEventListener('click',  () => setTab('new'));
-document.getElementById('navUsed').addEventListener('click', () => setTab('used'));
+document.getElementById('navAll').addEventListener('click',()=>setTab('all'));
+document.getElementById('navNew').addEventListener('click',()=>setTab('new'));
+document.getElementById('navUsed').addEventListener('click',()=>setTab('used'));
 
-/* ── REFRESH BUTTON ─────────────────────────────────────────── */
-const refreshBtn = document.getElementById('refreshBtn');
-let refreshAnim = false;
-refreshBtn.addEventListener('click', () => {
-  if (refreshAnim) return;
-  refreshAnim = true;
-  refreshBtn.style.transition = 'transform 0.6s ease';
-  refreshBtn.style.transform = 'rotate(360deg)';
-  setTimeout(() => {
-    refreshBtn.style.transform = '';
-    refreshBtn.style.transition = '';
-    refreshAnim = false;
-  }, 600);
-  loadCodes();
+// ALL chip
+filterScroll.querySelector('[data-filter="all"]').addEventListener('click',()=>{activeGame='all';updateChips();render();});
+
+// SCRAPE BUTTON — triggers GitHub Actions workflow_dispatch via API
+// NOTE: needs a fine-grained PAT stored as GH_TOKEN secret, OR just re-fetches codes.json
+const scrapeBtn = document.getElementById('scrapeBtn');
+scrapeBtn.addEventListener('click',()=>{
+  const svg = scrapeBtn.querySelector('svg');
+  svg.classList.add('spinning');
+  setTimeout(()=>svg.classList.remove('spinning'), 700);
+  loadCodes().then(()=>showToast('Refreshed!'));
 });
 
-/* ── FILTER ALL CHIP ────────────────────────────────────────── */
-filterScroll.querySelector('[data-filter="all"]').addEventListener('click', () => {
-  activeGame = 'all';
-  updateChips();
-  render();
-});
-
-/* ── AUTO-REFRESH ────────────────────────────────────────────── */
+// AUTO-REFRESH
 setInterval(loadCodes, REFRESH_MS);
 
-/* ── INIT ────────────────────────────────────────────────────── */
-(async () => {
+// INIT
+(async()=>{
   usedSet = await loadUsedPromos();
   await loadCodes();
 })();
