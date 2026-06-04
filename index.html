@@ -99,6 +99,16 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .nav-item svg{width:20px;height:20px;}
 .toast{position:fixed;bottom:calc(var(--nav-h) + var(--space-3));left:50%;transform:translateX(-50%) translateY(6px);background:var(--text);color:var(--bg);padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:600;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .18s,transform .18s;z-index:200;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* PAT modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:var(--space-4);}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-4);width:100%;max-width:360px;display:flex;flex-direction:column;gap:var(--space-3);}
+.modal h3{font-size:var(--text-base);font-weight:700;}
+.modal p{font-size:var(--text-sm);color:var(--text-muted);line-height:1.5;}
+.modal input{width:100%;background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--text);font-family:monospace;outline:none;}
+.modal input:focus{border-color:var(--primary);}
+.modal-actions{display:flex;gap:var(--space-2);justify-content:flex-end;}
+.btn-primary{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);background:var(--primary);color:#fff;font-size:var(--text-sm);font-weight:600;}
+.btn-ghost{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);color:var(--text-muted);font-size:var(--text-sm);}
 </style>
 </head>
 <body>
@@ -136,29 +146,38 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!-- PAT setup modal -->
+<div class="modal-backdrop" id="patModal" style="display:none">
+  <div class="modal">
+    <h3>&#128274; Set GitHub Token</h3>
+    <p>To trigger the scraper from this button, paste your GitHub fine-grained PAT below. It is saved only in <strong>your browser</strong> — never in any file or the repo.</p>
+    <p>Create one at <a href="https://github.com/settings/tokens?type=beta" target="_blank" style="color:var(--primary)">github.com/settings/tokens</a> — select only this repo, give it <strong>Actions → Read and Write</strong>.</p>
+    <input type="password" id="patInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+    <div class="modal-actions">
+      <button class="btn-ghost" id="patCancel">Cancel</button>
+      <button class="btn-primary" id="patSave">Save &amp; Trigger</button>
+    </div>
+  </div>
+</div>
+
 <script src="./js/firebase.js"></script>
 <script>
-// ----------------------------------------------------------------
-// CONFIG — paste your fine-grained PAT below.
-// Required permission: Actions → Read and Write (on this repo only).
-// Get one at: https://github.com/settings/tokens?type=beta
-// The PAT only allows triggering workflows — it cannot read code,
-// secrets, or do anything else on GitHub.
-// ----------------------------------------------------------------
-const GH_PAT           = '';   // <-- paste PAT here
-const GH_OWNER         = 'Teleskopiss';
-const GH_REPO          = 'PromoCodes';
-const WORKFLOW_FILE    = 'scrape.yml';
-const CODES_URL        = './codes.json';
-const REFRESH_MS       = 20 * 60 * 1000;
-const NEW_DAYS         = 2;
-const COUNTDOWN_SECS   = 120;  // 2 minutes
+const GH_OWNER       = 'Teleskopiss';
+const GH_REPO        = 'PromoCodes';
+const WORKFLOW_FILE  = 'scrape.yml';
+const CODES_URL      = './codes.json';
+const REFRESH_MS     = 20 * 60 * 1000;
+const NEW_DAYS       = 2;
+const COUNTDOWN_SECS = 120;
+const PAT_STORAGE_KEY = 'gh_dispatch_pat';
+
+// PAT lives only in localStorage — never in this file
+function getStoredPAT(){ return localStorage.getItem(PAT_STORAGE_KEY) || ''; }
+function storePAT(v){ localStorage.setItem(PAT_STORAGE_KEY, v); }
 
 const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c', default:'#a78bfa' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
-const SOURCE_LABELS = {
-  facebook:'Facebook', instagram:'Instagram', tiktok:'TikTok', taplink:'Taplink',
-};
+const SOURCE_LABELS = { facebook:'Facebook', instagram:'Instagram', tiktok:'TikTok', taplink:'Taplink' };
 const GAME_CONFIGS = {
   gaminator:{ facebook_url:'https://www.facebook.com/gaminator3000', instagram_user:'gaminator', tiktok_user:'gaminator3000', taplink_url:'https://taplink.cc/gaminator3000' },
   slotpark: { facebook_url:'https://www.facebook.com/slotpark',      instagram_user:'slotpark',  tiktok_user:'slotparkslots', taplink_url:null },
@@ -179,6 +198,20 @@ const fetchBtn     = document.getElementById('fetchBtn');
 const fetchIcon    = document.getElementById('fetchIcon');
 const fetchLabel   = document.getElementById('fetchLabel');
 const themeBtn     = document.getElementById('themeToggle');
+const patModal     = document.getElementById('patModal');
+const patInput     = document.getElementById('patInput');
+
+// ---------- PAT modal ----------
+function showPatModal(){ patInput.value=''; patModal.style.display='flex'; setTimeout(()=>patInput.focus(),100); }
+function hidePatModal(){ patModal.style.display='none'; }
+document.getElementById('patCancel').addEventListener('click', hidePatModal);
+document.getElementById('patSave').addEventListener('click', async ()=>{
+  const val = patInput.value.trim();
+  if(!val){ showToast('Paste your PAT first'); return; }
+  storePAT(val);
+  hidePatModal();
+  await doTrigger();
+});
 
 // ---------- theme ----------
 let theme = 'dark';
@@ -222,14 +255,8 @@ function startCountdown(){
   clearInterval(countdownTimer);
   fetchBtn.disabled = true;
   let secs = COUNTDOWN_SECS;
-
   function tick(){
-    if(secs <= 0){
-      clearInterval(countdownTimer);
-      // Scraper should be done — reload the page to get fresh codes.json
-      location.reload();
-      return;
-    }
+    if(secs <= 0){ clearInterval(countdownTimer); location.reload(); return; }
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     fetchLabel.textContent = `${m}:${String(s).padStart(2,'0')}`;
@@ -240,15 +267,14 @@ function startCountdown(){
 }
 
 // ---------- GitHub Actions dispatch ----------
-async function triggerWorkflow(){
-  if(!GH_PAT) return false;
+async function triggerWorkflow(pat){
   try{
     const res = await fetch(
       `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
       {
         method: 'POST',
         headers: {
-          'Authorization':        `Bearer ${GH_PAT}`,
+          'Authorization':        `Bearer ${pat}`,
           'Accept':               'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
           'Content-Type':         'application/json',
@@ -260,6 +286,27 @@ async function triggerWorkflow(){
   } catch(e){
     console.warn('Dispatch error:', e);
     return false;
+  }
+}
+
+async function doTrigger(){
+  fetchIcon.classList.add('spinning');
+  fetchLabel.textContent = 'Starting...';
+  fetchBtn.disabled = true;
+
+  const pat = getStoredPAT();
+  const ok  = await triggerWorkflow(pat);
+  fetchIcon.classList.remove('spinning');
+
+  if(ok){
+    showToast('Scraper started! Reloading in 2m...');
+    startCountdown();
+  } else {
+    // PAT might be wrong — clear it and let user re-enter
+    localStorage.removeItem(PAT_STORAGE_KEY);
+    showToast('Token invalid or expired — please re-enter');
+    fetchBtn.disabled = false;
+    fetchLabel.textContent = 'Refresh';
   }
 }
 
@@ -382,29 +429,13 @@ filterScroll.querySelector('[data-filter="all"]').addEventListener('click', ()=>
 
 // ---------- fetch button ----------
 fetchBtn.addEventListener('click', async () => {
-  fetchIcon.classList.add('spinning');
-  fetchLabel.textContent = 'Starting...';
-  fetchBtn.disabled = true;
-
-  const ok = await triggerWorkflow();
-  fetchIcon.classList.remove('spinning');
-
-  if(ok){
-    showToast('Scraper started! Reloading in 2m...');
-  } else if(!GH_PAT){
-    showToast('Add GH_PAT in index.html to trigger scraper');
-    fetchBtn.disabled = false;
-    fetchLabel.textContent = 'Refresh';
-    await loadCodes();
-    return;
-  } else {
-    showToast('Could not trigger — check PAT permissions');
-    fetchBtn.disabled = false;
-    fetchLabel.textContent = 'Refresh';
+  const pat = getStoredPAT();
+  if(!pat){
+    // First time — show modal to enter PAT
+    showPatModal();
     return;
   }
-
-  startCountdown();
+  await doTrigger();
 });
 
 // ---------- auto-refresh every 20min ----------
