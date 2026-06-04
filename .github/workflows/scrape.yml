@@ -2,7 +2,6 @@ name: Scrape Promo Codes
 
 on:
   schedule:
-    # Runs every 20 minutes
     - cron: "*/20 * * * *"
   workflow_dispatch:
 
@@ -16,6 +15,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          # Always pull latest so we never have stale history (fixes push rejection)
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,8 +25,11 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
 
       - name: Run scraper
         env:
@@ -36,6 +41,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           git add codes.json
           git diff --cached --quiet || git commit -m "chore: update codes.json [skip ci]"
           git push
