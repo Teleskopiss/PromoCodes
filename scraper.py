@@ -2,13 +2,12 @@
 """
 scraper.py
 
-Extraction rules:
-- Facebook: ONLY tokens that appear immediately after "CODE:" or "BONUS CODE:"
-  No fallback. No bare-token scan. If the label isn't there, nothing is extracted.
-- Other sources (taplink, instagram, tiktok): same strict CODE:/BONUS CODE: rule
-  plus a few extra label words (promo, redeem, gift, reward).
+Facebook posts for both games always have CODE: or BONUS CODE: at the bottom
+of a longer post. We click every "See More" link before reading post text.
 
-post_date is scraped per-post so the UI shows "posted X ago".
+Extraction rule: a token is a code ONLY if it directly follows
+  "CODE:" or "BONUS CODE:" (with any whitespace between colon and token).
+No bare-token scan. No blacklist. No fallback to whole-page text.
 """
 
 import json
@@ -19,7 +18,6 @@ import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import requests
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
@@ -50,11 +48,7 @@ HEADERS = {
 }
 
 # ------------------------------------------------------------------ #
-# EXTRACTION                                                          #
-# ------------------------------------------------------------------ #
-# Strict pattern: token MUST follow "CODE:" or "BONUS CODE:"
-# Captures only the token after the colon+optional-space.
-# No fallback. No bare-token scan. No blacklist needed.
+# EXTRACTION — strictly after CODE: or BONUS CODE:                    #
 # ------------------------------------------------------------------ #
 
 FB_CODE_RE = re.compile(
@@ -62,7 +56,6 @@ FB_CODE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# For non-FB sources we also accept a few extra label words
 GENERAL_CODE_RE = re.compile(
     r'(?:bonus\s+code|promo\s+code|redeem\s+code|gift\s+code'
     r'|reward\s+code|free\s+code|code)'
@@ -71,19 +64,15 @@ GENERAL_CODE_RE = re.compile(
 )
 
 
-def _valid(token: str) -> str | None:
-    """Return uppercased token if it looks like a real code, else None."""
+def _valid(token: str):
     t = token.strip().upper()
-    # pure number
     if t.isdigit(): return None
-    # number + K/M/B suffix (follower counts like 91K, 1M)
     if re.fullmatch(r'\d+[KMBkmb]', t): return None
-    # too short
     if len(t) < 3: return None
     return t
 
 
-def extract_fb(text: str) -> list[str]:
+def extract_fb(text: str) -> list:
     found = set()
     for m in FB_CODE_RE.finditer(text):
         t = _valid(m.group(1))
@@ -93,7 +82,7 @@ def extract_fb(text: str) -> list[str]:
     return sorted(found)
 
 
-def extract_general(text: str) -> list[str]:
+def extract_general(text: str) -> list:
     found = set()
     for m in GENERAL_CODE_RE.finditer(text):
         t = _valid(m.group(1))
@@ -225,19 +214,40 @@ def pw_html(page, url, wait_ms=4000):
         log.warning("pw_html %s: %s", url, e); return ""
 
 
+def expand_fb_posts(page):
+    """
+    Click every 'See More' link on the mbasic Facebook page so that
+    truncated posts are fully expanded before we read the HTML.
+    mbasic 'See More' links have href containing 'story_fbid' or 'refid'
+    but the simplest selector is any <a> whose text is exactly 'See More'.
+    """
+    try:
+        # Click up to 20 "See More" links
+        for _ in range(20):
+            see_more = page.locator('a', has_text=re.compile(r'^See [Mm]ore$')).first
+            if not see_more.is_visible(timeout=1500):
+                break
+            see_more.click()
+            page.wait_for_timeout(800)
+    except Exception:
+        pass  # no more links or timeout — fine
+
+
 def scrape_taplink(page, game, url):
     log.info("[%s] Taplink", game)
     soup = BeautifulSoup(pw_html(page, url, 5000), "html.parser")
     text = soup.get_text(" ", strip=True)
-    log.info("  taplink text snippet: %s", text[:200])
+    log.info("  taplink snippet: %s", text[:300])
     return [build_item(game, c, "taplink", url, iso_now()) for c in extract_general(text)]
 
 
 def scrape_facebook(page, game, url):
     """
-    Playwright on mbasic.facebook.com.
-    Only extracts tokens after CODE: or BONUS CODE:.
-    NO fallback to whole-page text (avoids follower count false positives).
+    1. Load mbasic Facebook page with Playwright.
+    2. Scroll to load more posts.
+    3. Click every 'See More' to expand truncated posts.
+    4. Extract codes ONLY via CODE: / BONUS CODE: pattern.
+    5. No fallback to whole-page text.
     """
     log.info("[%s] Facebook", game)
     mbasic = url.replace("www.facebook.com", "mbasic.facebook.com")
@@ -245,32 +255,33 @@ def scrape_facebook(page, game, url):
     try:
         page.goto(mbasic, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(3000)
-        # scroll to load more posts
-        for _ in range(3):
+
+        # Scroll to load more posts
+        for _ in range(4):
             page.keyboard.press("End")
             page.wait_for_timeout(1200)
 
+        # Expand truncated posts
+        expand_fb_posts(page)
+
         soup = BeautifulSoup(page.content(), "html.parser")
-
-        # mbasic post blocks have data-ft attribute
         posts = soup.find_all("div", attrs={"data-ft": True})
-        log.info("  [%s] FB post blocks: %d", game, len(posts))
+        log.info("  [%s] FB post blocks after expand: %d", game, len(posts))
 
-        # if no posts found (login wall etc.), log and return empty — no fallback
         if not posts:
-            log.warning("  [%s] FB: no post blocks found (login wall?). Skipping.", game)
+            log.warning("  [%s] FB: no post blocks (login wall?). Skipping — no fallback.", game)
             return []
 
         for post in posts:
             text = post.get_text(" ", strip=True)
+            log.debug("  post snippet: %s", text[:120])
             codes = extract_fb(text)
             if not codes:
                 continue
 
-            # date extraction for this post block
             dates = []
             for el in post.find_all("abbr"):
-                dates.append(el.get("title","") or el.get_text())
+                dates.append(el.get("title", "") or el.get_text())
             for el in post.find_all("span"):
                 t = el.get_text(strip=True)
                 if re.search(r'ago|\d{4}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec', t, re.I):
@@ -278,7 +289,7 @@ def scrape_facebook(page, game, url):
             post_date = best_date(dates)
 
             for code in codes:
-                log.info("  [%s] FB code: %s  post_date=%s", game, code, post_date)
+                log.info("  [%s] FB code=%s  post_date=%s", game, code, post_date)
                 results.append(build_item(game, code, "facebook", url, post_date))
 
     except Exception as e:
@@ -291,7 +302,7 @@ def scrape_instagram(page, game, username):
     url = f"https://www.instagram.com/{username}/"
     soup = BeautifulSoup(pw_html(page, url, 5000), "html.parser")
     text = soup.get_text(" ", strip=True)
-    log.info("  IG snippet: %s", text[:200])
+    log.info("  IG snippet: %s", text[:300])
     return [build_item(game, c, "instagram", url, iso_now()) for c in extract_general(text)]
 
 
@@ -307,7 +318,7 @@ def scrape_tiktok(page, game, username):
     results = []
     if not items:
         text = soup.get_text(" ", strip=True)
-        log.info("  TT page snippet: %s", text[:200])
+        log.info("  TT page snippet: %s", text[:300])
         return [build_item(game, c, "tiktok", url) for c in extract_general(text)]
 
     for item in items:
@@ -315,7 +326,7 @@ def scrape_tiktok(page, game, username):
         codes = extract_general(text)
         if not codes: continue
         dates = []
-        for el in item.find_all(["span","p","time"]):
+        for el in item.find_all(["span", "p", "time"]):
             t = el.get("datetime") or el.get_text(strip=True)
             if t and re.search(r'ago|\d{4}|\d+-\d+-\d+', t, re.I):
                 dates.append(t)
