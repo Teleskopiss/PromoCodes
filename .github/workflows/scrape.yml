@@ -31,10 +31,11 @@ jobs:
         run: playwright install chromium --with-deps
 
       - name: Run scraper
-        env:
-          IG_USERNAME: ${{ secrets.IG_USERNAME }}
-          IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
-        run: python scraper.py
+        run: python scraper.py 2>&1 | tee scraper.log
+
+      - name: Show scraper log
+        if: always()
+        run: cat scraper.log
 
       - name: Commit and push codes.json
         run: |
