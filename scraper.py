@@ -258,8 +258,7 @@ def scrape_instagram(game: str, username: str) -> list[dict]:
 
         bio_match = re.search(r'"biography":"([^"]*)"', resp.text)
         if bio_match:
-            bio = bio_match.group(1).replace("\
-", " ")
+            bio = bio_match.group(1).replace("\\n", " ")
             for code in extract_codes(bio):
                 add(code, "instagram bio", public_url)
     except Exception as e:
@@ -331,13 +330,12 @@ def scrape_tiktok(game: str, username: str) -> list[dict]:
 
         bio_match = re.search(r'"signature":"([^"]*)"', html)
         if bio_match:
-            bio = bio_match.group(1).replace("\
-", " ")
+            bio = bio_match.group(1).replace("\\n", " ")
             for code in extract_codes(bio):
                 add(code, "tiktok bio", profile_url)
 
         descs = re.findall(r'"desc":"([^"]*)"', html)
-        times = re.findall(r'"createTime":(d+)', html)
+        times = re.findall(r'"createTime":(\d+)', html)
         cutoff_ts = (now_utc() - timedelta(days=MAX_DISPLAY_AGE_DAYS)).timestamp()
 
         for i, desc in enumerate(descs):
