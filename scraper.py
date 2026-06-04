@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """
-scraper.py - Uses Playwright for JS-rendered pages so codes are actually visible.
+scraper.py
+
+Extraction strategy
+-------------------
+ONLY use context-anchored matches: a token is a code only if it is
+directly preceded by a label keyword (code / promo / bonus / etc.)
+followed by a separator.  This eliminates follower-count false positives
+like "91K", "71K", plain numbers, and random short words.
+
+post_date is scraped alongside each code so the UI can show
+"posted X ago" instead of "scraped X ago".
 """
 
 import json
@@ -8,20 +18,18 @@ import re
 import time
 import hashlib
 import logging
-import os
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+from playwright.sync_api import sync_playwright
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
 OUTPUT_FILE      = Path("codes.json")
 MAX_HISTORY_DAYS = 30
-MAX_AGE_DAYS     = 7
 
 GAMES = {
     "gaminator": {
@@ -43,101 +51,167 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# Words that should NEVER be treated as codes on their own,
-# but we still scan text AROUND them for actual codes.
+# --------------------------------------------------------------------------
+# EXTRACTION  –  context-only, no bare-token fallback
+# --------------------------------------------------------------------------
+# Matches:  CODE: nmv5   /  promo - AB12  /  bonus=XY9  /  redeem: k8n95
+# Does NOT match:  "91K followers", "71K", plain numbers, plain words
+# --------------------------------------------------------------------------
+CODE_RE = re.compile(
+    r'(?:free\s*code|promo\s*code|bonus\s*code|coupon\s*code'
+    r'|redeem\s*code|gift\s*code|reward\s*code'
+    r'|promo|coupon|redeem|gift|reward|code)'
+    r'[\s:=\-\u2013\u2014\u25ba\u2192\u00bb]+'
+    r'([A-Za-z0-9]{3,10})'
+    r'(?=[\s,;.!\)\]\"\u2019]|$)',
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Hard blacklist: these tokens are NEVER codes even after a label
 BLACKLIST = {
-    "HTTPS","HTTP","WWW","COM","NET","ORG","APP","APK",
-    "FACEBOOK","INSTAGRAM","TIKTOK","TAPLINK",
-    "GAMINATOR","SLOTPARK",
-    "BONUS","PROMO","CODE","CODES","SLOTS","GAMES","REELS",
-    "STORY","VIDEO","POST","COMMENT","LINK","BIO",
-    "FREE","COINS","CHIP","CHIPS","SPIN","SPINS",
-    "DAILY","TODAY","WEEK","MONTH","NEW","GET","WIN",
-    "PLAY","MORE","JOIN","LIKE","SHARE","FOLLOW","CLICK",
-    "DOWNLOAD","INSTALL","UPDATE","LOGIN","REGISTER",
-    "CEST","CET","UTC","GMT","PM","AM",
+    "HTTPS", "HTTP", "WWW", "COM", "NET", "ORG", "APP", "APK",
+    "FACEBOOK", "INSTAGRAM", "TIKTOK", "TAPLINK",
+    "GAMINATOR", "SLOTPARK",
+    "BONUS", "PROMO", "CODE", "CODES",
+    "FREE", "COINS", "CHIP", "CHIPS", "SPIN", "SPINS",
+    "DAILY", "TODAY", "WEEK", "MONTH", "NEW", "GET", "WIN",
+    "PLAY", "MORE", "JOIN", "LIKE", "SHARE", "FOLLOW", "CLICK",
+    "DOWNLOAD", "INSTALL", "UPDATE", "LOGIN", "REGISTER",
+    "CEST", "CET", "UTC", "GMT", "PM", "AM",
+    "HERE", "LINK", "NOW", "BELOW", "ABOVE", "CLICK",
 }
 
-# High-confidence: token right after a label keyword + separator
-# e.g. "CODE: nmv5", "Promo - AB12", "bonus=XY9"
-CODE_CONTEXT_RE = re.compile(
-    r'(?:code|promo|bonus|coupon|redeem|gift|reward|freecode|free\s*code)'
-    r'[\s:=\-\u2013\u2014]+'
-    r'([A-Za-z0-9]{3,8})'
-    r'(?=[\s,;!\)\]\"\']|$)',
-    re.IGNORECASE
-)
 
-# Fallback: bare short alphanumeric token surrounded by non-alphanumeric chars
-CODE_BARE_RE = re.compile(
-    r'(?<![A-Za-z0-9])([A-Za-z0-9]{3,8})(?![A-Za-z0-9])'
-)
+def extract_codes(text: str) -> list[str]:
+    """Return sorted list of unique uppercase code tokens found in text."""
+    if not text:
+        return []
+    found = set()
+    for m in CODE_RE.finditer(text):
+        token = m.group(1).upper()
+        if token in BLACKLIST:
+            continue
+        if token.isdigit():
+            continue
+        # Reject pure-number with K/M suffix  (e.g. 91K, 71K, 1M)
+        if re.fullmatch(r'\d+[KMBkmb]', token):
+            continue
+        if len(token) < 3:
+            continue
+        log.info("  [code found] %s  (context: %s)", token, m.group(0)[:40])
+        found.add(token)
+    return sorted(found)
 
+
+# --------------------------------------------------------------------------
+# DATE PARSING helpers
+# --------------------------------------------------------------------------
+
+REL_DATE_RE = re.compile(
+    r'(\d+)\s*(second|minute|hour|day|week|month|year)s?\s*ago',
+    re.IGNORECASE,
+)
+MONTH_MAP = {
+    'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,
+    'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12,
+}
+
+
+def parse_relative_date(text: str) -> str | None:
+    """Try to parse a relative date string like '3 hours ago' to ISO."""
+    m = REL_DATE_RE.search(text)
+    if not m:
+        return None
+    n, unit = int(m.group(1)), m.group(2).lower()
+    delta_map = {
+        'second': timedelta(seconds=n),
+        'minute': timedelta(minutes=n),
+        'hour':   timedelta(hours=n),
+        'day':    timedelta(days=n),
+        'week':   timedelta(weeks=n),
+        'month':  timedelta(days=n * 30),
+        'year':   timedelta(days=n * 365),
+    }
+    dt = datetime.now(timezone.utc) - delta_map.get(unit, timedelta(0))
+    return dt.isoformat()
+
+
+def parse_abs_date(text: str) -> str | None:
+    """Try a few absolute date patterns (Facebook / TikTok style)."""
+    # "May 15" or "May 15, 2025" or "15 May 2025"
+    patterns = [
+        r'(\w+)\s+(\d{1,2}),?\s+(\d{4})',   # May 15, 2025
+        r'(\d{1,2})\s+(\w+)\s+(\d{4})',       # 15 May 2025
+        r'(\w+)\s+(\d{1,2})(?!\s*,?\s*\d{4})', # May 15 (no year → current year)
+    ]
+    now = datetime.now(timezone.utc)
+    for pat in patterns:
+        m = re.search(pat, text)
+        if not m:
+            continue
+        try:
+            groups = m.groups()
+            if len(groups) == 3:
+                a, b, c = groups
+                # figure out which is month name
+                if a[:3].lower() in MONTH_MAP:
+                    month, day, year = MONTH_MAP[a[:3].lower()], int(b), int(c)
+                elif b[:3].lower() in MONTH_MAP:
+                    day, month, year = int(a), MONTH_MAP[b[:3].lower()], int(c)
+                else:
+                    continue
+            else:  # 2 groups: month + day, assume current year
+                a, b = groups
+                if a[:3].lower() in MONTH_MAP:
+                    month, day, year = MONTH_MAP[a[:3].lower()], int(b), now.year
+                else:
+                    continue
+            dt = datetime(year, month, day, 12, 0, tzinfo=timezone.utc)
+            return dt.isoformat()
+        except Exception:
+            continue
+    return None
+
+
+def best_date(strings: list[str]) -> str | None:
+    """Given a list of candidate date strings, return the best ISO date."""
+    for s in strings:
+        d = parse_relative_date(s)
+        if d:
+            return d
+    for s in strings:
+        d = parse_abs_date(s)
+        if d:
+            return d
+    return None
+
+
+# --------------------------------------------------------------------------
+# ITEM BUILDER
+# --------------------------------------------------------------------------
 
 def now_utc(): return datetime.now(timezone.utc)
 def iso_now(): return now_utc().isoformat()
 def make_id(game, code): return hashlib.md5(f"{game}:{code}".encode()).hexdigest()[:12]
 
 
-def looks_like_code(token: str, from_context: bool = False) -> bool:
-    """Decide whether a token looks like a promo code.
-
-    Context matches (preceded by CODE:/PROMO: etc.) are trusted more;
-    they only need to be alphanumeric and not a pure number.
-    Bare matches also need a mix of letters+digits.
-    """
-    t = token.upper()
-    # Always reject blacklisted words — but note: context matches
-    # already skip the label itself, so the captured group won't be
-    # "CODE" — it'll be whatever follows it.
-    if t in BLACKLIST:              return False
-    if t.isdigit():                 return False
-    if len(t) < 3:                  return False
-
-    has_letter = any(c.isalpha() for c in t)
-    has_digit  = any(c.isdigit() for c in t)
-
-    if from_context:
-        # e.g. "nmv5", "AB12", "k8n95" — just needs at least one of each
-        # Also allow pure-letter short codes like "nmvx" if directly after CODE:
-        return has_letter  # at minimum must have a letter; pure numbers already blocked above
-    else:
-        # Bare match: must be a genuine mix to avoid false positives
-        if t.isalpha() and len(t) > 4: return False  # plain English word
-        return has_letter and has_digit
-
-
-def extract_codes(text: str) -> list[str]:
-    if not text:
-        return []
-    found = set()
-
-    # Pass 1: high-confidence context matches — bypass bare-word filter
-    for m in CODE_CONTEXT_RE.finditer(text):
-        token = m.group(1).upper()
-        if looks_like_code(token, from_context=True):
-            log.info("  [context] %s", token)
-            found.add(token)
-
-    # Pass 2: bare tokens (lower confidence)
-    for m in CODE_BARE_RE.finditer(text):
-        token = m.group(1).upper()
-        if looks_like_code(token, from_context=False):
-            found.add(token)
-
-    return sorted(found)
-
-
-def build_item(game, code, platform, url=""):
+def build_item(game, code, platform, url="", post_date: str | None = None):
     return {
         "id":          make_id(game, code),
         "game":        game,
         "code":        code,
         "sources":     [platform],
+        # post_date = when the post was published (best effort)
+        # found_at  = when the scraper scraped it
+        "post_date":   post_date or iso_now(),
         "found_at":    iso_now(),
         "raw_sources": [{"platform": platform, "url": url}],
     }
 
+
+# --------------------------------------------------------------------------
+# PERSISTENCE
+# --------------------------------------------------------------------------
 
 def load_existing():
     if not OUTPUT_FILE.exists(): return []
@@ -152,7 +226,7 @@ def load_existing():
 def save_codes(items):
     OUTPUT_FILE.write_text(
         json.dumps({"updated_at": iso_now(), "codes": items}, ensure_ascii=False, indent=2),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
 
@@ -171,80 +245,168 @@ def merge_codes(existing, new_items):
                 cur.setdefault("raw_sources", []).append(src)
                 seen.add(pair)
         cur["sources"] = sorted({s["platform"] for s in cur.get("raw_sources", [])})
-        if item["found_at"] > cur["found_at"]: cur["found_at"] = item["found_at"]
+        # keep earliest post_date we've seen
+        if item.get("post_date") and item["post_date"] < cur.get("post_date", item["post_date"]):
+            cur["post_date"] = item["post_date"]
 
     cutoff = now_utc() - timedelta(days=MAX_HISTORY_DAYS)
-    merged = []
-    for item in by_key.values():
-        try:
-            if datetime.fromisoformat(item["found_at"]) >= cutoff:
-                merged.append(item)
-        except Exception:
-            merged.append(item)
-    merged.sort(key=lambda x: x["found_at"], reverse=True)
+    merged = [v for v in by_key.values()
+              if datetime.fromisoformat(v.get("found_at", iso_now())) >= cutoff]
+    merged.sort(key=lambda x: x.get("post_date", x["found_at"]), reverse=True)
     return merged
 
+
+# --------------------------------------------------------------------------
+# SCRAPERS
+# --------------------------------------------------------------------------
 
 def pw_get_text(page, url: str, wait_ms: int = 4000) -> str:
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(wait_ms)
         text = page.inner_text("body")
-        log.info("  text sample: %s", text[:400].replace("\n", " "))
+        log.info("  [%s] body sample: %s", url[:60], text[:400].replace("\n", " "))
         return text
     except Exception as e:
-        log.warning("pw_get_text failed for %s: %s", url, e)
+        log.warning("pw_get_text failed %s: %s", url, e)
         return ""
 
 
 def scrape_taplink_pw(page, game, url):
+    """Taplink bio page – no post date, use scrape time."""
     log.info("[%s] Taplink: %s", game, url)
     text = pw_get_text(page, url, wait_ms=5000)
     results = []
     for code in extract_codes(text):
         log.info("[%s] Taplink -> %s", game, code)
-        results.append(build_item(game, code, "taplink", url))
+        # bio has no post date; found_at == post_date (updated live)
+        results.append(build_item(game, code, "taplink", url, post_date=iso_now()))
     return results
 
 
-def scrape_facebook(game, url):
-    log.info("[%s] Facebook: %s", game, url)
-    results = []
+def scrape_facebook_pw(page, game, url):
+    """
+    Use Playwright on mbasic Facebook to actually render the page.
+    mbasic gives real HTML without requiring login for public pages.
+    We look at each "story" block to extract code + timestamp together.
+    """
+    log.info("[%s] Facebook PW: %s", game, url)
     mbasic = url.replace("www.facebook.com", "mbasic.facebook.com")
+    results = []
     try:
-        resp = requests.get(mbasic, headers=HEADERS, timeout=20)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        text = soup.get_text(" ", strip=True)
-        log.info("[%s] FB sample: %s", game, text[:300])
-        for code in extract_codes(text):
-            log.info("[%s] Facebook -> %s", game, code)
-            results.append(build_item(game, code, "facebook", url))
+        page.goto(mbasic, wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(3000)
+        html = page.content()
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Each post on mbasic is wrapped in a <div> with id like "u_0_..."
+        # The timestamp is usually in an <abbr> or a small <span>
+        posts = soup.find_all("div", attrs={"data-ft": True})
+        if not posts:
+            # fallback: treat whole page as one block
+            posts = [soup]
+
+        for post in posts:
+            block_text = post.get_text(" ", strip=True)
+            codes = extract_codes(block_text)
+            if not codes:
+                continue
+
+            # Try to find a date near this post
+            date_candidates = []
+            for abbr in post.find_all("abbr"):
+                date_candidates.append(abbr.get("title", "") or abbr.get_text())
+            for span in post.find_all("span"):
+                t = span.get_text(strip=True)
+                if re.search(r'(ago|\d{4}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)', t, re.I):
+                    date_candidates.append(t)
+            post_date = best_date(date_candidates)
+
+            for code in codes:
+                log.info("[%s] Facebook -> %s  (post_date=%s)", game, code, post_date)
+                results.append(build_item(game, code, "facebook", url, post_date=post_date))
+
     except Exception as e:
-        log.warning("[%s] Facebook failed: %s", game, e)
+        log.warning("[%s] Facebook PW failed: %s", game, e)
     return results
 
 
 def scrape_instagram_pw(page, game, username):
+    """
+    Instagram profile page via Playwright.
+    We try to read the bio area and any visible caption text.
+    Instagram requires login to see post timestamps; for the bio we use
+    scrape time as post_date.
+    """
     log.info("[%s] Instagram: @%s", game, username)
     url = f"https://www.instagram.com/{username}/"
-    text = pw_get_text(page, url, wait_ms=5000)
     results = []
-    for code in extract_codes(text):
-        log.info("[%s] Instagram -> %s", game, code)
-        results.append(build_item(game, code, "instagram", url))
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(5000)
+        html = page.content()
+        soup = BeautifulSoup(html, "html.parser")
+        full_text = soup.get_text(" ", strip=True)
+
+        codes = extract_codes(full_text)
+        for code in codes:
+            log.info("[%s] Instagram -> %s", game, code)
+            # Instagram scrape: use now as post_date (bio-style)
+            results.append(build_item(game, code, "instagram", url, post_date=iso_now()))
+    except Exception as e:
+        log.warning("[%s] Instagram failed: %s", game, e)
     return results
 
 
 def scrape_tiktok_pw(page, game, username):
+    """
+    TikTok profile page via Playwright.
+    Visible post captions sometimes include codes and relative timestamps.
+    """
     log.info("[%s] TikTok: @%s", game, username)
     url = f"https://www.tiktok.com/@{username}"
-    text = pw_get_text(page, url, wait_ms=5000)
     results = []
-    for code in extract_codes(text):
-        log.info("[%s] TikTok -> %s", game, code)
-        results.append(build_item(game, code, "tiktok", url))
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(6000)  # TikTok is slow
+        html = page.content()
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Try per-video containers for code + date pairing
+        video_items = soup.find_all(attrs={"data-e2e": re.compile(r'user-post', re.I)})
+        if not video_items:
+            video_items = soup.find_all("div", class_=re.compile(r'DivItemContainer', re.I))
+        if not video_items:
+            # fallback: whole page
+            text = soup.get_text(" ", strip=True)
+            for code in extract_codes(text):
+                log.info("[%s] TikTok (page) -> %s", game, code)
+                results.append(build_item(game, code, "tiktok", url))
+            return results
+
+        for item in video_items:
+            block_text = item.get_text(" ", strip=True)
+            codes = extract_codes(block_text)
+            if not codes:
+                continue
+            date_candidates = []
+            for span in item.find_all(["span", "p", "time"]):
+                t = span.get("datetime") or span.get_text(strip=True)
+                if t and re.search(r'(ago|\d{4}|\d+-\d+-\d+)', t, re.I):
+                    date_candidates.append(t)
+            post_date = best_date(date_candidates)
+            for code in codes:
+                log.info("[%s] TikTok -> %s  (post_date=%s)", game, code, post_date)
+                results.append(build_item(game, code, "tiktok", url, post_date=post_date))
+
+    except Exception as e:
+        log.warning("[%s] TikTok failed: %s", game, e)
     return results
 
+
+# --------------------------------------------------------------------------
+# MAIN
+# --------------------------------------------------------------------------
 
 def main():
     existing  = load_existing()
@@ -255,7 +417,7 @@ def main():
         ctx = browser.new_context(
             user_agent=HEADERS["User-Agent"],
             locale="en-US",
-            viewport={"width": 1280, "height": 800},
+            viewport={"width": 1280, "height": 900},
         )
         page = ctx.new_page()
 
@@ -267,7 +429,7 @@ def main():
                 except Exception as e: log.error("[%s] Taplink error: %s", game, e)
                 time.sleep(2)
 
-            try: new_items.extend(scrape_facebook(game, cfg["facebook_url"]))
+            try: new_items.extend(scrape_facebook_pw(page, game, cfg["facebook_url"]))
             except Exception as e: log.error("[%s] Facebook error: %s", game, e)
             time.sleep(2)
 
@@ -283,7 +445,7 @@ def main():
 
     merged = merge_codes(existing, new_items)
     save_codes(merged)
-    log.info("Done. Total: %d  Found this run: %d", len(merged), len(new_items))
+    log.info("Done. Total codes: %d  New this run: %d", len(merged), len(new_items))
 
 
 if __name__ == "__main__":
