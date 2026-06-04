@@ -16,7 +16,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # Always pull latest so we never have stale history (fixes push rejection)
           fetch-depth: 0
 
       - name: Set up Python
@@ -31,17 +30,20 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
+      - name: Configure git and sync branch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+
       - name: Run scraper
         env:
           IG_USERNAME: ${{ secrets.IG_USERNAME }}
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
         run: python scraper.py
 
-      - name: Commit updated codes.json
+      - name: Commit and push codes.json
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
           git add codes.json
           git diff --cached --quiet || git commit -m "chore: update codes.json [skip ci]"
           git push
