@@ -1,0 +1,10 @@
+{
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
+  "functions": {
+    "api/trigger.js": {
+      "runtime": "edge"
+    }
+  }
+}
