@@ -25,16 +25,16 @@ MAX_AGE_DAYS     = 7
 
 GAMES = {
     "gaminator": {
-        "facebook_url":    "https://www.facebook.com/gaminator3000",
-        "instagram_user":  "gaminator",
-        "tiktok_user":     "gaminator3000",
-        "taplink_url":     "https://taplink.cc/gaminator3000",
+        "facebook_url":   "https://www.facebook.com/gaminator3000",
+        "instagram_user": "gaminator",
+        "tiktok_user":    "gaminator3000",
+        "taplink_url":    "https://taplink.cc/gaminator3000",
     },
     "slotpark": {
-        "facebook_url":    "https://www.facebook.com/slotpark",
-        "instagram_user":  "slotpark",
-        "tiktok_user":     "slotparkslots",
-        "taplink_url":     None,
+        "facebook_url":   "https://www.facebook.com/slotpark",
+        "instagram_user": "slotpark",
+        "tiktok_user":    "slotparkslots",
+        "taplink_url":    None,
     },
 }
 
@@ -43,6 +43,8 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
+# Words that should NEVER be treated as codes on their own,
+# but we still scan text AROUND them for actual codes.
 BLACKLIST = {
     "HTTPS","HTTP","WWW","COM","NET","ORG","APP","APK",
     "FACEBOOK","INSTAGRAM","TIKTOK","TAPLINK",
@@ -53,33 +55,56 @@ BLACKLIST = {
     "DAILY","TODAY","WEEK","MONTH","NEW","GET","WIN",
     "PLAY","MORE","JOIN","LIKE","SHARE","FOLLOW","CLICK",
     "DOWNLOAD","INSTALL","UPDATE","LOGIN","REGISTER",
+    "CEST","CET","UTC","GMT","PM","AM",
 }
 
-# Codes appear after context words like "code:", "promo:", "bonus:", etc.
-# Primary pattern: look for codes preceded by a colon or label
-# Also falls back to bare short alphanumeric tokens as secondary pass
+# High-confidence: token right after a label keyword + separator
+# e.g. "CODE: nmv5", "Promo - AB12", "bonus=XY9"
 CODE_CONTEXT_RE = re.compile(
-    r'(?:code|promo|bonus|coupon|redeem|gift|reward)[\s:=\-]+([A-Za-z0-9]{3,8})\b',
+    r'(?:code|promo|bonus|coupon|redeem|gift|reward|freecode|free\s*code)'
+    r'[\s:=\-\u2013\u2014]+'
+    r'([A-Za-z0-9]{3,8})'
+    r'(?=[\s,;!\)\]\"\']|$)',
     re.IGNORECASE
 )
-# Fallback: bare short mixed-alphanumeric token surrounded by whitespace/punctuation
-CODE_BARE_RE = re.compile(r'(?:^|[\s,;\|\(\[\"\'])([A-Za-z0-9]{3,8})(?=[\s,;\|\)\]\"\']|$)')
+
+# Fallback: bare short alphanumeric token surrounded by non-alphanumeric chars
+CODE_BARE_RE = re.compile(
+    r'(?<![A-Za-z0-9])([A-Za-z0-9]{3,8})(?![A-Za-z0-9])'
+)
 
 
-def now_utc():  return datetime.now(timezone.utc)
-def iso_now():  return now_utc().isoformat()
+def now_utc(): return datetime.now(timezone.utc)
+def iso_now(): return now_utc().isoformat()
 def make_id(game, code): return hashlib.md5(f"{game}:{code}".encode()).hexdigest()[:12]
 
 
-def looks_like_code(token: str) -> bool:
+def looks_like_code(token: str, from_context: bool = False) -> bool:
+    """Decide whether a token looks like a promo code.
+
+    Context matches (preceded by CODE:/PROMO: etc.) are trusted more;
+    they only need to be alphanumeric and not a pure number.
+    Bare matches also need a mix of letters+digits.
+    """
     t = token.upper()
+    # Always reject blacklisted words — but note: context matches
+    # already skip the label itself, so the captured group won't be
+    # "CODE" — it'll be whatever follows it.
     if t in BLACKLIST:              return False
     if t.isdigit():                 return False
-    # pure word longer than 4 chars is likely not a code
-    if t.isalpha() and len(t) > 4: return False
+    if len(t) < 3:                  return False
+
     has_letter = any(c.isalpha() for c in t)
     has_digit  = any(c.isdigit() for c in t)
-    return has_letter and has_digit
+
+    if from_context:
+        # e.g. "nmv5", "AB12", "k8n95" — just needs at least one of each
+        # Also allow pure-letter short codes like "nmvx" if directly after CODE:
+        return has_letter  # at minimum must have a letter; pure numbers already blocked above
+    else:
+        # Bare match: must be a genuine mix to avoid false positives
+        if t.isalpha() and len(t) > 4: return False  # plain English word
+        return has_letter and has_digit
 
 
 def extract_codes(text: str) -> list[str]:
@@ -87,17 +112,17 @@ def extract_codes(text: str) -> list[str]:
         return []
     found = set()
 
-    # Pass 1: high-confidence — code preceded by label+colon
+    # Pass 1: high-confidence context matches — bypass bare-word filter
     for m in CODE_CONTEXT_RE.finditer(text):
         token = m.group(1).upper()
-        if looks_like_code(token):
-            log.info("  [context match] %s", token)
+        if looks_like_code(token, from_context=True):
+            log.info("  [context] %s", token)
             found.add(token)
 
-    # Pass 2: bare tokens (lower confidence, more false positives filtered by looks_like_code)
+    # Pass 2: bare tokens (lower confidence)
     for m in CODE_BARE_RE.finditer(text):
         token = m.group(1).upper()
-        if looks_like_code(token):
+        if looks_like_code(token, from_context=False):
             found.add(token)
 
     return sorted(found)
@@ -139,13 +164,13 @@ def merge_codes(existing, new_items):
             by_key[key] = item
             continue
         cur = by_key[key]
-        seen = {(s["platform"], s.get("url","")) for s in cur.get("raw_sources",[])}
-        for src in item.get("raw_sources",[]):
-            pair = (src["platform"], src.get("url",""))
+        seen = {(s["platform"], s.get("url", "")) for s in cur.get("raw_sources", [])}
+        for src in item.get("raw_sources", []):
+            pair = (src["platform"], src.get("url", ""))
             if pair not in seen:
-                cur.setdefault("raw_sources",[]).append(src)
+                cur.setdefault("raw_sources", []).append(src)
                 seen.add(pair)
-        cur["sources"] = sorted({s["platform"] for s in cur.get("raw_sources",[])})
+        cur["sources"] = sorted({s["platform"] for s in cur.get("raw_sources", [])})
         if item["found_at"] > cur["found_at"]: cur["found_at"] = item["found_at"]
 
     cutoff = now_utc() - timedelta(days=MAX_HISTORY_DAYS)
@@ -165,7 +190,7 @@ def pw_get_text(page, url: str, wait_ms: int = 4000) -> str:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(wait_ms)
         text = page.inner_text("body")
-        log.info("  text sample: %s", text[:300].replace("\n", " "))
+        log.info("  text sample: %s", text[:400].replace("\n", " "))
         return text
     except Exception as e:
         log.warning("pw_get_text failed for %s: %s", url, e)
@@ -190,7 +215,7 @@ def scrape_facebook(game, url):
         resp = requests.get(mbasic, headers=HEADERS, timeout=20)
         soup = BeautifulSoup(resp.text, "html.parser")
         text = soup.get_text(" ", strip=True)
-        log.info("[%s] FB sample: %s", game, text[:200])
+        log.info("[%s] FB sample: %s", game, text[:300])
         for code in extract_codes(text):
             log.info("[%s] Facebook -> %s", game, code)
             results.append(build_item(game, code, "facebook", url))
@@ -201,7 +226,7 @@ def scrape_facebook(game, url):
 
 def scrape_instagram_pw(page, game, username):
     log.info("[%s] Instagram: @%s", game, username)
-    url  = f"https://www.instagram.com/{username}/"
+    url = f"https://www.instagram.com/{username}/"
     text = pw_get_text(page, url, wait_ms=5000)
     results = []
     for code in extract_codes(text):
@@ -212,7 +237,7 @@ def scrape_instagram_pw(page, game, username):
 
 def scrape_tiktok_pw(page, game, username):
     log.info("[%s] TikTok: @%s", game, username)
-    url  = f"https://www.tiktok.com/@{username}"
+    url = f"https://www.tiktok.com/@{username}"
     text = pw_get_text(page, url, wait_ms=5000)
     results = []
     for code in extract_codes(text):
