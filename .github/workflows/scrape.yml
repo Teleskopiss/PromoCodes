@@ -30,12 +30,6 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
-      - name: Configure git and sync branch
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-
       - name: Run scraper
         env:
           IG_USERNAME: ${{ secrets.IG_USERNAME }}
@@ -44,6 +38,14 @@ jobs:
 
       - name: Commit and push codes.json
         run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add codes.json
-          git diff --cached --quiet || git commit -m "chore: update codes.json [skip ci]"
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git stash push -m "ci-codes" -- codes.json
+          git fetch origin main
+          git rebase origin/main
+          git stash pop
+          git add codes.json
+          git commit -m "chore: update codes.json [skip ci]"
           git push
