@@ -161,15 +161,11 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 
-// Source config — no coinscrazy, use TikTok/Taplink
+// Only show source tag for these known sources — coinscrazy is intentionally excluded
 const SOURCE_MAP = {
-  gaminator: {
-    default: { url:'https://taplink.cc/gaminator3000', label:'TikTok' },
-    'gaminator.com': { url:'https://gaminator.com/en/promotions', label:'Gaminator' },
-  },
-  slotpark: {
-    default: { url:'https://www.tiktok.com/@slotparkslots', label:'TikTok' },
-  }
+  'tiktok.com':          { url:'https://www.tiktok.com/@slotparkslots',   label:'TikTok' },
+  'taplink.cc':          { url:'https://taplink.cc/gaminator3000',         label:'TikTok' },
+  'gaminator.com':       { url:'https://gaminator.com/en/promotions',      label:'Gaminator' },
 };
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
@@ -322,15 +318,17 @@ function buildCard(code){
   const card=document.createElement('div');
   card.className='card'+(used?' used':'');
 
-  // Source tag — no coinscrazy, use TikTok/Taplink
+  // Only show source tag for tiktok/taplink/gaminator.com — coinscrazy = no tag
   let sourceHtml='';
-  const gameMap = SOURCE_MAP[code.game];
-  if(gameMap){
-    const entry = (code.source && gameMap[code.source]) ? gameMap[code.source] : gameMap.default;
-    if(entry){
+  if(code.source){
+    // Find a matching key by checking if the source string contains a known domain
+    const matchKey = Object.keys(SOURCE_MAP).find(k => code.source.includes(k));
+    if(matchKey){
+      const entry = SOURCE_MAP[matchKey];
       const linkIcon=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
       sourceHtml=`<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer">${linkIcon}${entry.label}</a>`;
     }
+    // coinscrazy or any unlisted source → sourceHtml stays empty → no tag shown
   }
 
   card.innerHTML=`
