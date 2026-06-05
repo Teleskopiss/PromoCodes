@@ -28,6 +28,11 @@ EIGHT_BP_REWARD = {
     "label": "8bpreward.win"
 }
 
+TAPLINK_SLOTPARK = {
+    "url": "https://taplink.cc/slotpark",
+    "label": "taplink.cc"
+}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -140,7 +145,10 @@ def scrape_gaminator_site() -> list:
 
 def scrape_8bpreward() -> list:
     """Scrape 8bpreward.win for gaminator bonus codes.
-    Codes appear in the format: BONUS CODE : XXXXXXXX
+    The page is a Blogger site — codes are embedded in the raw HTML source
+    (inside JS data blobs / post body HTML), not in the rendered DOM text.
+    We therefore search resp.text directly after HTML-unescaping.
+    Pattern on page: BONUS CODE : ra1n
     """
     try:
         resp = requests.get(EIGHT_BP_REWARD["url"], headers=HEADERS, timeout=25)
@@ -149,20 +157,20 @@ def scrape_8bpreward() -> list:
         print(f"[8bpreward] fetch error: {e}")
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-    content = soup.find("article") or soup.find("div", class_=re.compile("entry|post|content")) or soup.body
-    if not content:
-        print("[8bpreward] no content container found")
-        return []
-
-    full_text = content.get_text(" ", strip=True)
+    # HTML-unescape so &#32; &amp; etc. resolve to plain text
+    from html import unescape
+    raw = unescape(resp.text)
 
     results = []
     seen = set()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # Pattern: "BONUS CODE : XXXXXXXX" (flexible spacing and separators)
-    for m in re.finditer(r"BONUS\s+CODE\s*[:\-]\s*([A-Za-z0-9]{4,20})", full_text, re.IGNORECASE):
+    # Primary pattern: "BONUS CODE : ra1n" — flexible spacing, colon, dash, or equals
+    # Code length 3-20 chars (covers short codes like "ra1n")
+    for m in re.finditer(
+        r"BONUS\s+CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
+        raw, re.IGNORECASE
+    ):
         code = m.group(1).strip()
         if code.upper() not in seen:
             seen.add(code.upper())
@@ -172,7 +180,44 @@ def scrape_8bpreward() -> list:
                 "source": EIGHT_BP_REWARD["label"]
             })
 
-    print(f"[8bpreward] found {len(results)} codes, sample: {[r['code'] for r in results[:3]]}")
+    print(f"[8bpreward] found {len(results)} codes, sample: {[r['code'] for r in results[:5]]}")
+    return results
+
+
+def scrape_taplink_slotpark() -> list:
+    """Scrape taplink.cc/slotpark for Slotpark bonus codes.
+    Taplink pages embed their content in JSON inside <script> tags.
+    We search the raw HTML for any CODE / BONUS CODE pattern.
+    """
+    try:
+        resp = requests.get(TAPLINK_SLOTPARK["url"], headers=HEADERS, timeout=25)
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"[taplink-slotpark] fetch error: {e}")
+        return []
+
+    from html import unescape
+    raw = unescape(resp.text)
+
+    results = []
+    seen = set()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # Match: "BONUS CODE : XXXX", "CODE: XXXX", "code - XXXX"
+    for m in re.finditer(
+        r"(?:BONUS\s+)?CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
+        raw, re.IGNORECASE
+    ):
+        code = m.group(1).strip()
+        if code.upper() not in seen:
+            seen.add(code.upper())
+            results.append({
+                "code": code,
+                "date": today,
+                "source": TAPLINK_SLOTPARK["label"]
+            })
+
+    print(f"[taplink-slotpark] found {len(results)} codes, sample: {[r['code'] for r in results[:5]]}")
     return results
 
 
@@ -205,7 +250,7 @@ def main():
     print(f"[gaminator] +{added} new codes (total: {len(data['gaminator'])})")
 
     # Slotpark
-    slotpark_new = scrape_coinscrazy("slotpark")
+    slotpark_new = scrape_coinscrazy("slotpark") + scrape_taplink_slotpark()
     data["slotpark"], added = merge(data["slotpark"], slotpark_new)
     total_added += added
     print(f"[slotpark] +{added} new codes (total: {len(data['slotpark'])})")
