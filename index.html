@@ -6,8 +6,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>PromoRadar</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -51,16 +49,19 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .topbar-logo{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-base);font-weight:700;letter-spacing:-.02em;}
 .logo-icon{width:26px;height:26px;background:var(--primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:13px;}
 .topbar-right{display:flex;align-items:center;gap:var(--space-2);}
-.updated-row{display:flex;align-items:center;gap:var(--space-2);}
 #updatedText{font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap;}
-.fetch-btn{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--radius-full);background:var(--warn-dim);border:1px solid var(--warn);color:var(--warn);font-size:var(--text-xs);font-weight:600;transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;min-width:100px;justify-content:center;}
+/* Refresh button — plain icon */
+.refresh-btn{width:32px;height:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background var(--transition),color var(--transition);-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.refresh-btn:active{background:var(--surface-3);color:var(--text);}
+.refresh-btn.spinning svg{animation:spin .7s linear infinite;}
+/* Get New Info button */
+.fetch-btn{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--radius-full);background:var(--warn-dim);border:1px solid var(--warn);color:var(--warn);font-size:var(--text-xs);font-weight:600;transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;min-width:110px;justify-content:center;}
 .fetch-btn:active{opacity:.75;transform:scale(.97);}
 .fetch-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .fetch-btn svg{flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinning{animation:spin .8s linear infinite;}
 .icon-btn{width:32px;height:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background var(--transition),color var(--transition);-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .icon-btn:active{background:var(--surface-3);color:var(--text);}
+@keyframes spin{to{transform:rotate(360deg)}}
 .filter-bar{position:sticky;top:calc(42px + env(safe-area-inset-top));z-index:90;background:var(--bg);padding:var(--space-2) 0;border-bottom:1px solid var(--divider);}
 .filter-scroll{display:flex;gap:var(--space-2);padding:0 var(--space-4);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .filter-scroll::-webkit-scrollbar{display:none;}
@@ -81,7 +82,6 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .card.used .code-text{text-decoration:line-through;color:var(--text-faint);}
 .copy-icon{flex-shrink:0;width:32px;height:32px;border-radius:var(--radius-md);background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;transition:all var(--transition);}
 .code-row.copied .copy-icon{background:var(--success-dim);color:var(--success);}
-.sources-row{display:flex;flex-wrap:wrap;gap:var(--space-1);align-items:center;}
 .source-tag{font-size:var(--text-xs);padding:2px var(--space-2);border-radius:var(--radius-full);border:1px solid var(--border);color:var(--primary);background:var(--primary-dim);cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;text-decoration:none;display:inline-flex;align-items:center;gap:3px;}
 .source-tag:active{opacity:.7;}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--space-16) var(--space-8);gap:var(--space-3);}
@@ -106,13 +106,19 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
   <header class="topbar">
     <div class="topbar-logo"><div class="logo-icon">&#127920;</div>PromoRadar</div>
     <div class="topbar-right">
-      <div class="updated-row">
-        <span id="updatedText">Loading...</span>
-        <button class="fetch-btn" id="fetchBtn">
-          <svg id="fetchIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          <span id="fetchLabel">Refresh</span>
-        </button>
-      </div>
+      <span id="updatedText">Loading...</span>
+
+      <!-- Plain refresh: re-fetches codes.json right now -->
+      <button class="refresh-btn" id="refreshBtn" title="Refresh data">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+
+      <!-- Get New Info: triggers GitHub workflow then counts down -->
+      <button class="fetch-btn" id="fetchBtn">
+        <svg id="fetchIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span id="fetchLabel">Get New Info</span>
+      </button>
+
       <button class="icon-btn" id="themeToggle">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
@@ -122,9 +128,9 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
   <div class="filter-bar"><div class="filter-scroll" id="filterScroll"><button class="chip active" data-filter="all">All games</button></div></div>
 
   <main class="main" id="main">
-    <div class="skel-card" id="skel1"><div class="skel-line skeleton" style="width:40%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div><div class="skel-tag skeleton" style="width:55px"></div></div></div>
+    <div class="skel-card" id="skel1"><div class="skel-line skeleton" style="width:40%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div></div></div>
     <div class="skel-card" id="skel2"><div class="skel-line skeleton" style="width:55%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div></div></div>
-    <div class="skel-card" id="skel3"><div class="skel-line skeleton" style="width:35%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div><div class="skel-tag skeleton" style="width:80px"></div></div></div>
+    <div class="skel-card" id="skel3"><div class="skel-line skeleton" style="width:35%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div></div></div>
   </main>
 </div>
 
@@ -136,147 +142,177 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="./js/firebase.js"></script>
 <script>
-// Refresh button calls Cloudflare Worker — no token in browser
-const DISPATCH_URL   = 'https://promocodes-trigger.danielsmez1.workers.dev';
-const CODES_URL      = './codes.json';
-const REFRESH_MS     = 20 * 60 * 1000;
-const NEW_DAYS       = 2;
-const COUNTDOWN_SECS = 120;
+const DISPATCH_URL = 'https://promocodes-trigger.danielsmez1.workers.dev';
+const CODES_URL    = './codes.json';
+const COUNTDOWN    = 60; // seconds
+const NEW_DAYS     = 2;
 
-const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c', default:'#a78bfa' };
-const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
-const SOURCE_LABELS = { facebook:'Facebook', instagram:'Instagram', tiktok:'TikTok', taplink:'Taplink' };
-const GAME_CONFIGS = {
-  gaminator:{ facebook_url:'https://www.facebook.com/gaminator3000', instagram_user:'gaminator', tiktok_user:'gaminator3000', taplink_url:'https://taplink.cc/gaminator3000' },
-  slotpark: { facebook_url:'https://www.facebook.com/slotpark',      instagram_user:'slotpark',  tiktok_user:'slotparkslots', taplink_url:null },
-};
-const SOURCE_URLS = {
-  facebook:  g => GAME_CONFIGS[g]?.facebook_url,
-  instagram: g => `https://www.instagram.com/${GAME_CONFIGS[g]?.instagram_user}/`,
-  tiktok:    g => `https://www.tiktok.com/@${GAME_CONFIGS[g]?.tiktok_user}`,
-  taplink:   g => GAME_CONFIGS[g]?.taplink_url,
-};
+const GAME_COLORS = { gaminator:'#6c8cff', slotpark:'#fb923c' };
+const GAME_NAMES  = { gaminator:'Gaminator', slotpark:'Slotpark' };
 
-let allCodes=[], usedSet=new Set(), activeGame='all', activeTab='all', lastUpdated=null;
+// Persistent used-codes via localStorage key
+const USED_KEY = 'promoRadar_used';
+function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
+function saveUsed(s){ try{ localStorage.setItem(USED_KEY, JSON.stringify([...s])); }catch{} }
+
+let allCodes = [], usedSet = loadUsed(), activeGame = 'all', activeTab = 'all', lastUpdated = null;
+
 const mainEl       = document.getElementById('main');
 const filterScroll = document.getElementById('filterScroll');
-const toast        = document.getElementById('toast');
+const toastEl      = document.getElementById('toast');
 const updatedText  = document.getElementById('updatedText');
+const refreshBtn   = document.getElementById('refreshBtn');
 const fetchBtn     = document.getElementById('fetchBtn');
 const fetchIcon    = document.getElementById('fetchIcon');
 const fetchLabel   = document.getElementById('fetchLabel');
 const themeBtn     = document.getElementById('themeToggle');
 
+// Theme
 let theme = 'dark';
 function setTheme(t){
   theme = t;
   document.documentElement.setAttribute('data-theme', t);
-  themeBtn.innerHTML = t === 'dark'
+  themeBtn.innerHTML = t==='dark'
     ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
     : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 }
-themeBtn.addEventListener('click', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
+themeBtn.addEventListener('click', ()=>setTheme(theme==='dark'?'light':'dark'));
 
+// Toast
 let toastTimer;
-function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),2400); }
+function showToast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2400); }
 
+// Time helpers
 function fmtDate(iso){
   if(!iso) return '—';
-  const d = new Date(iso);
+  const d=new Date(iso);
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
-function timeAgo(code){
-  const iso  = code.post_date || code.found_at;
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if(m < 1)  return 'just now';
-  if(m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if(h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if(d < 7)  return `${d}d ago`;
-  const dt = new Date(iso);
-  return `${dt.getDate()} ${dt.toLocaleString('en',{month:'short'})}`;
+function timeAgo(isoOrDate){
+  // isoOrDate can be a found_at ISO string OR a date string like "2026-06-05"
+  if(!isoOrDate) return '—';
+  const d = new Date(isoOrDate);
+  const diff = Date.now() - d.getTime();
+  const m = Math.floor(diff/60000);
+  if(m<1)  return 'just now';
+  if(m<60) return `${m}m ago`;
+  const h=Math.floor(m/60); if(h<24) return `${h}h ago`;
+  const dy=Math.floor(h/24); if(dy<7) return `${dy}d ago`;
+  return `${d.getDate()} ${d.toLocaleString('en',{month:'short'})}`;
 }
-function isNew(code){ return (Date.now() - new Date(code.post_date||code.found_at).getTime()) < NEW_DAYS*86400000; }
+function isNew(entry){ return (Date.now()-new Date(entry.found_at||entry.date).getTime()) < NEW_DAYS*86400000; }
 
-let countdownTimer = null;
-function startCountdown(){
-  clearInterval(countdownTimer);
-  fetchBtn.disabled = true;
-  let secs = COUNTDOWN_SECS;
-  function tick(){
-    if(secs <= 0){ clearInterval(countdownTimer); location.reload(); return; }
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    fetchLabel.textContent = `${m}:${String(s).padStart(2,'0')}`;
-    secs--;
-  }
-  tick();
-  countdownTimer = setInterval(tick, 1000);
-}
-
-async function triggerWorkflow(){
-  try{
-    const res = await fetch(DISPATCH_URL, { method: 'POST' });
-    // Accept any 2xx response (200, 204, etc.)
-    return res.ok;
-  } catch(e){
-    console.warn('Trigger error:', e); return false;
-  }
-}
-
+// Load codes.json — handles NEW format {gaminator:[...], slotpark:[...], updated_at:"..."}
 async function loadCodes(){
+  refreshBtn.classList.add('spinning');
   try{
-    const r = await fetch(CODES_URL + '?t=' + Date.now());
+    const r = await fetch(CODES_URL+'?t='+Date.now());
     if(!r.ok) throw new Error(r.status);
     const data = await r.json();
-    allCodes    = Array.isArray(data) ? data : (data.codes || []);
-    lastUpdated = Array.isArray(data) ? null  : (data.updated_at || null);
+    lastUpdated = data.updated_at || null;
+
+    // Flatten gaminator and slotpark arrays into allCodes
+    const games = ['gaminator','slotpark'];
+    allCodes = [];
+    games.forEach(g=>{
+      (data[g]||[]).forEach(entry=>{
+        allCodes.push({
+          id:        entry.code + '_' + g,   // stable unique id
+          game:      g,
+          code:      entry.code,
+          date:      entry.date,
+          source:    entry.source || null,
+          found_at:  entry.found_at || entry.date
+        });
+      });
+    });
   } catch(e){
     if(!allCodes.length) showToast('Could not load codes');
   }
-  updatedText.textContent = lastUpdated ? 'Updated: ' + fmtDate(lastUpdated) : 'Updated: —';
+  updatedText.textContent = lastUpdated ? 'Updated: '+fmtDate(lastUpdated) : 'Updated: —';
+  refreshBtn.classList.remove('spinning');
   buildFilterChips();
   render();
 }
 
+// Refresh button — just re-fetch codes.json
+refreshBtn.addEventListener('click', ()=>{ loadCodes(); showToast('Refreshing...'); });
+
+// Get New Info — trigger workflow then countdown
+let countdownTimer = null;
+function startCountdown(){
+  clearInterval(countdownTimer);
+  fetchBtn.disabled = true;
+  let secs = COUNTDOWN;
+  function tick(){
+    if(secs<=0){ clearInterval(countdownTimer); loadCodes(); fetchBtn.disabled=false; fetchLabel.textContent='Get New Info'; return; }
+    const m=Math.floor(secs/60), s=secs%60;
+    fetchLabel.textContent=`${m}:${String(s).padStart(2,'0')}`;
+    secs--;
+  }
+  tick();
+  countdownTimer=setInterval(tick,1000);
+}
+
+fetchBtn.addEventListener('click', async ()=>{
+  fetchIcon.style.animation='spin .7s linear infinite';
+  fetchLabel.textContent='Starting...';
+  fetchBtn.disabled=true;
+  try{
+    const res = await fetch(DISPATCH_URL,{method:'POST'});
+    if(res.ok){
+      showToast('Scraper started! Refreshing in 1m...');
+      startCountdown();
+    } else {
+      showToast('Could not trigger scraper ('+res.status+')');
+      fetchBtn.disabled=false;
+      fetchLabel.textContent='Get New Info';
+    }
+  } catch(e){
+    showToast('Network error');
+    fetchBtn.disabled=false;
+    fetchLabel.textContent='Get New Info';
+  }
+  fetchIcon.style.animation='';
+});
+
+// Filter chips
 function buildFilterChips(){
   [...filterScroll.querySelectorAll('[data-filter]:not([data-filter="all"])')].forEach(e=>e.remove());
   [...new Set(allCodes.map(c=>c.game))].forEach(g=>{
-    const btn = document.createElement('button');
-    btn.className = 'chip' + (activeGame===g?' active':'');
-    btn.dataset.filter = g;
-    btn.textContent = GAME_NAMES[g] || (g[0].toUpperCase()+g.slice(1));
-    btn.addEventListener('click', ()=>{ activeGame=g; updateChips(); render(); });
+    const btn=document.createElement('button');
+    btn.className='chip'+(activeGame===g?' active':'');
+    btn.dataset.filter=g;
+    btn.textContent=GAME_NAMES[g]||(g[0].toUpperCase()+g.slice(1));
+    btn.addEventListener('click',()=>{activeGame=g;updateChips();render();});
     filterScroll.appendChild(btn);
   });
 }
 function updateChips(){
-  filterScroll.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.filter===activeGame));
+  filterScroll.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===activeGame));
   filterScroll.querySelector(`[data-filter="${activeGame}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
 }
 
+// Render
 function render(){
   ['skel1','skel2','skel3'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
-  let codes = allCodes;
-  if(activeGame !== 'all') codes = codes.filter(c=>c.game===activeGame);
-  if(activeTab  === 'new')  codes = codes.filter(c=>isNew(c));
-  if(activeTab  === 'used') codes = codes.filter(c=>usedSet.has(c.id));
-  mainEl.innerHTML = '';
+  let codes=allCodes;
+  if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
+  if(activeTab==='new')  codes=codes.filter(c=>isNew(c));
+  if(activeTab==='used') codes=codes.filter(c=>usedSet.has(c.id));
+  mainEl.innerHTML='';
   if(!codes.length){
-    mainEl.innerHTML = `<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${activeTab==='used'?'No used codes yet.':'No promo codes found.'}</p></div>`;
+    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${activeTab==='used'?'No used codes yet.':'No promo codes found.'}</p></div>`;
     return;
   }
-  const byGame = {};
-  codes.forEach(c=>{ (byGame[c.game]=byGame[c.game]||[]).push(c); });
+  const byGame={};
+  codes.forEach(c=>{(byGame[c.game]=byGame[c.game]||[]).push(c);});
   Object.entries(byGame).forEach(([game,items])=>{
-    if(activeGame === 'all'){
-      const lbl = document.createElement('p');
-      lbl.className = 'section-label';
-      lbl.textContent = GAME_NAMES[game]||(game[0].toUpperCase()+game.slice(1));
+    if(activeGame==='all'){
+      const lbl=document.createElement('p');
+      lbl.className='section-label';
+      lbl.textContent=GAME_NAMES[game]||(game[0].toUpperCase()+game.slice(1));
       mainEl.appendChild(lbl);
     }
     items.forEach(code=>mainEl.appendChild(buildCard(code)));
@@ -284,82 +320,73 @@ function render(){
 }
 
 function buildCard(code){
-  const used  = usedSet.has(code.id);
-  const _new  = isNew(code);
-  const color = GAME_COLORS[code.game] || GAME_COLORS.default;
-  const card  = document.createElement('div');
-  card.className = 'card' + (used?' used':'');
-  const srcTags = (code.sources||[]).map(s=>{
-    const urlFn = SOURCE_URLS[s];
-    const url   = urlFn ? urlFn(code.game) : null;
-    const label = SOURCE_LABELS[s] || s;
-    return url
-      ? `<a class="source-tag" href="${url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${label}</a>`
-      : `<span class="source-tag">${label}</span>`;
-  }).join('');
-  card.innerHTML = `
+  const used=usedSet.has(code.id);
+  const _new=isNew(code);
+  const color=GAME_COLORS[code.game]||'#a78bfa';
+  const card=document.createElement('div');
+  card.className='card'+(used?' used':'');
+
+  // Source tag — only show if source is a website (coinscrazy / gaminator.com)
+  let sourceHtml='';
+  if(code.source && (code.source.includes('.com')||code.source.includes('.net'))){
+    const url = code.source==='coinscrazy.com'
+      ? (code.game==='slotpark' ? 'https://coinscrazy.com/slotpark-bonus-code-free-chips/' : 'https://coinscrazy.com/gaminator-free-coins/')
+      : (code.source==='gaminator.com' ? 'https://gaminator.com/en/promotions' : null);
+    sourceHtml = url
+      ? `<a class="source-tag" href="${url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${code.source}</a>`
+      : `<span class="source-tag">${code.source}</span>`;
+  }
+
+  // Show found_at time ("3h ago", "just now") — this is when the scraper found it
+  const foundAgo = timeAgo(code.found_at);
+
+  card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
         <span class="game-dot" style="background:${color}"></span>
         ${GAME_NAMES[code.game]||(code.game[0].toUpperCase()+code.game.slice(1))}
         ${_new&&!used?'<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>':''}
       </div>
-      <span class="age-badge">${timeAgo(code)}</span>
+      <span class="age-badge">${foundAgo}</span>
     </div>
     <div class="code-row" id="cr-${code.id}">
       <span class="code-text">${code.code}</span>
       <span class="copy-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
     </div>
-    <div class="sources-row">${srcTags}</div>`;
-  const codeRow = card.querySelector('.code-row');
-  codeRow.addEventListener('click', ()=>{
+    ${sourceHtml ? `<div>${sourceHtml}</div>` : ''}`;
+
+  card.querySelector('.code-row').addEventListener('click',()=>{
     navigator.clipboard.writeText(code.code).then(()=>{
-      codeRow.classList.add('copied');
-      codeRow.querySelector('.copy-icon').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const row=card.querySelector('.code-row');
+      row.classList.add('copied');
+      row.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
       showToast('Copied!');
       setTimeout(()=>{
-        codeRow.classList.remove('copied');
-        codeRow.querySelector('.copy-icon').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-      }, 1400);
-      if(!usedSet.has(code.id)){ markPromoUsed(code.id); usedSet.add(code.id); setTimeout(()=>render(),1600); }
+        row.classList.remove('copied');
+        row.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+      },1400);
+      if(!usedSet.has(code.id)){ usedSet.add(code.id); saveUsed(usedSet); setTimeout(()=>render(),1600); }
     }).catch(()=>showToast('Long-press to copy'));
   });
   return card;
 }
 
 function setTab(t){
-  activeTab = t;
+  activeTab=t;
   ['navAll','navNew','navUsed'].forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById({all:'navAll',new:'navNew',used:'navUsed'}[t])?.classList.add('active');
   render();
 }
-document.getElementById('navAll').addEventListener('click', ()=>setTab('all'));
-document.getElementById('navNew').addEventListener('click', ()=>setTab('new'));
-document.getElementById('navUsed').addEventListener('click', ()=>setTab('used'));
-filterScroll.querySelector('[data-filter="all"]').addEventListener('click', ()=>{ activeGame='all'; updateChips(); render(); });
+document.getElementById('navAll').addEventListener('click',()=>setTab('all'));
+document.getElementById('navNew').addEventListener('click',()=>setTab('new'));
+document.getElementById('navUsed').addEventListener('click',()=>setTab('used'));
+filterScroll.querySelector('[data-filter="all"]').addEventListener('click',()=>{activeGame='all';updateChips();render();});
 
-fetchBtn.addEventListener('click', async () => {
-  fetchIcon.classList.add('spinning');
-  fetchLabel.textContent = 'Starting...';
-  fetchBtn.disabled = true;
-  const ok = await triggerWorkflow();
-  fetchIcon.classList.remove('spinning');
-  if(ok){
-    showToast('Scraper started! Reloading in 2m...');
-    startCountdown();
-  } else {
-    showToast('Could not trigger scraper');
-    fetchBtn.disabled = false;
-    fetchLabel.textContent = 'Refresh';
-  }
-});
+// Auto-refresh every 20 min
+setInterval(loadCodes, 20*60*1000);
 
-setInterval(loadCodes, REFRESH_MS);
-
-(async()=>{
-  usedSet = await loadUsedPromos();
-  await loadCodes();
-})();
+// Init
+loadCodes();
 </script>
 </body>
 </html>
