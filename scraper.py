@@ -30,7 +30,7 @@ EIGHT_BP_REWARD = {
 
 TAPLINK_SLOTPARK = {
     "url": "https://taplink.cc/slotpark",
-    "label": "taplink.cc"
+    "label": "taplink.cc/slotpark"  # unique label so SOURCE_MAP can distinguish it from gaminator taplink
 }
 
 HEADERS = {
@@ -144,10 +144,11 @@ def scrape_gaminator_site() -> list:
 
 
 def scrape_8bpreward() -> list:
-    """Scrape 8bpreward.win for gaminator bonus codes.
+    """
+    Scrape 8bpreward.win for gaminator bonus codes.
     The page is a Blogger site — codes are embedded in the raw HTML source
-    (inside JS data blobs / post body HTML), not in the rendered DOM text.
-    We therefore search resp.text directly after HTML-unescaping.
+    (inside JS data blobs / post body HTML), not reliably in the rendered DOM.
+    We search resp.text directly after HTML-unescaping.
     Pattern on page: BONUS CODE : ra1n
     """
     try:
@@ -157,7 +158,6 @@ def scrape_8bpreward() -> list:
         print(f"[8bpreward] fetch error: {e}")
         return []
 
-    # HTML-unescape so &#32; &amp; etc. resolve to plain text
     from html import unescape
     raw = unescape(resp.text)
 
@@ -165,8 +165,8 @@ def scrape_8bpreward() -> list:
     seen = set()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # Primary pattern: "BONUS CODE : ra1n" — flexible spacing, colon, dash, or equals
-    # Code length 3-20 chars (covers short codes like "ra1n")
+    # Pattern: "BONUS CODE : ra1n" — flexible spacing, colon/dash/equals separator
+    # Min length 3 to cover short codes like "ra1n"
     for m in re.finditer(
         r"BONUS\s+CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
         raw, re.IGNORECASE
@@ -185,9 +185,10 @@ def scrape_8bpreward() -> list:
 
 
 def scrape_taplink_slotpark() -> list:
-    """Scrape taplink.cc/slotpark for Slotpark bonus codes.
-    Taplink pages embed their content in JSON inside <script> tags.
-    We search the raw HTML for any CODE / BONUS CODE pattern.
+    """
+    Scrape taplink.cc/slotpark for Slotpark bonus codes.
+    Taplink pages embed content in JSON inside <script> tags.
+    We search the raw HTML for any BONUS CODE / CODE: pattern.
     """
     try:
         resp = requests.get(TAPLINK_SLOTPARK["url"], headers=HEADERS, timeout=25)

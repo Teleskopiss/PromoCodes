@@ -161,12 +161,14 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 
-// Only show source tag for these known sources — coinscrazy is intentionally excluded
+// SOURCE_MAP: key must match (or be a substring of) entry.source in codes.json
+// coinscrazy intentionally excluded — no source tag shown for those
 const SOURCE_MAP = {
-  'tiktok.com':          { url:'https://www.tiktok.com/@slotparkslots',                       label:'TikTok' },
-  'taplink.cc':          { url:'https://taplink.cc/gaminator3000',                             label:'TikTok' },
-  'gaminator.com':       { url:'https://gaminator.com/en/promotions',                          label:'Gaminator' },
-  '8bpreward.win':       { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',       label:'8bpreward.win' },
+  'tiktok.com':            { url:'https://www.tiktok.com/@slotparkslots',                    label:'TikTok' },
+  'taplink.cc/gaminator':  { url:'https://taplink.cc/gaminator3000',                         label:'TikTok' },
+  'taplink.cc/slotpark':   { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
+  'gaminator.com':         { url:'https://gaminator.com/en/promotions',                      label:'Gaminator' },
+  '8bpreward.win':         { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
 };
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
@@ -319,7 +321,8 @@ function buildCard(code){
   const card=document.createElement('div');
   card.className='card'+(used?' used':'');
 
-  // Only show source tag for known sources in SOURCE_MAP — coinscrazy = no tag
+  // Show source tag only for known sources in SOURCE_MAP
+  // SOURCE_MAP keys are matched as substrings of entry.source
   let sourceHtml='';
   if(code.source){
     const matchKey = Object.keys(SOURCE_MAP).find(k => code.source.includes(k));
