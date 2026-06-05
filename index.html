@@ -21,7 +21,6 @@
   --transition:180ms cubic-bezier(.16,1,.3,1);
   --font:'Inter',system-ui,sans-serif;
   --nav-h:calc(3.5rem + env(safe-area-inset-bottom));
-  /* Dark mode only — permanent */
   --bg:#0f0f10;--surface:#1a1a1c;--surface-2:#222225;--surface-3:#2a2a2e;
   --border:rgba(255,255,255,.08);--divider:rgba(255,255,255,.05);
   --text:#e8e8ea;--text-muted:#8a8a90;--text-faint:#52525a;
@@ -35,8 +34,6 @@ html{-webkit-text-size-adjust:none;}
 body{font-family:var(--font);font-size:var(--text-base);color:var(--text);background:var(--bg);min-height:100dvh;overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
 button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .app{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:var(--nav-h);}
-
-/* Topbar */
 .topbar{
   position:sticky;top:0;z-index:100;
   background:var(--surface);border-bottom:1px solid var(--border);
@@ -45,41 +42,23 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
   display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
-.topbar-logo{
-  display:flex;align-items:center;gap:6px;
-  font-size:var(--text-sm);font-weight:700;letter-spacing:-.02em;
-  flex-shrink:0;
-}
+.topbar-logo{display:flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:700;letter-spacing:-.02em;flex-shrink:0;}
 .logo-icon{width:24px;height:24px;background:var(--primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
 .topbar-right{display:flex;align-items:center;gap:var(--space-2);flex-shrink:0;}
 #updatedText{font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap;}
-
 .refresh-btn{width:30px;height:30px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:background var(--transition),color var(--transition);-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .refresh-btn:active{background:var(--surface-3);color:var(--text);}
 .refresh-btn.spinning svg{animation:spin .7s linear infinite;}
-
-.fetch-btn{
-  display:flex;align-items:center;gap:4px;
-  padding:4px 9px;
-  border-radius:var(--radius-full);
-  background:var(--warn-dim);border:1px solid var(--warn);color:var(--warn);
-  font-size:var(--text-xs);font-weight:600;
-  transition:all var(--transition);white-space:nowrap;
-  -webkit-tap-highlight-color:transparent;
-  flex-shrink:0;
-}
+.fetch-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--radius-full);background:var(--warn-dim);border:1px solid var(--warn);color:var(--warn);font-size:var(--text-xs);font-weight:600;transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .fetch-btn:active{opacity:.75;transform:scale(.97);}
 .fetch-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .fetch-btn svg{flex-shrink:0;}
-
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .filter-bar{position:sticky;top:calc(40px + env(safe-area-inset-top));z-index:90;background:var(--bg);padding:var(--space-2) 0;border-bottom:1px solid var(--divider);}
 .filter-scroll{display:flex;gap:var(--space-2);padding:0 var(--space-3);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .filter-scroll::-webkit-scrollbar{display:none;}
 .chip{flex-shrink:0;padding:3px var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;cursor:pointer;}
 .chip.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
-
 .main{flex:1;padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);}
 .card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);box-shadow:var(--shadow);}
 .card.used{opacity:.4;}
@@ -161,14 +140,16 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 
-// SOURCE_MAP: key must match (or be a substring of) entry.source in codes.json
-// coinscrazy intentionally excluded — no source tag shown for those
+/**
+ * SOURCE_MAP — keys are EXACT source label strings stored in codes.json.
+ * Must match entry.source exactly (no substring matching — avoids wrong link bugs).
+ */
 const SOURCE_MAP = {
-  'tiktok.com':            { url:'https://www.tiktok.com/@slotparkslots',                    label:'TikTok' },
-  'taplink.cc/gaminator':  { url:'https://taplink.cc/gaminator3000',                         label:'TikTok' },
-  'taplink.cc/slotpark':   { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
-  'gaminator.com':         { url:'https://gaminator.com/en/promotions',                      label:'Gaminator' },
-  '8bpreward.win':         { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
+  'tiktok.com':          { url:'https://www.tiktok.com/@slotparkslots',                    label:'TikTok' },
+  'taplink.cc/gaminator':{ url:'https://taplink.cc/gaminator3000',                         label:'Gaminator TapLink' },
+  'taplink.cc/slotpark': { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
+  'gaminator.com':       { url:'https://gaminator.com/en/promotions',                      label:'Gaminator' },
+  '8bpreward.win':       { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
 };
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
@@ -321,13 +302,11 @@ function buildCard(code){
   const card=document.createElement('div');
   card.className='card'+(used?' used':'');
 
-  // Show source tag only for known sources in SOURCE_MAP
-  // SOURCE_MAP keys are matched as substrings of entry.source
+  // SOURCE_MAP lookup: exact match on entry.source
   let sourceHtml='';
   if(code.source){
-    const matchKey = Object.keys(SOURCE_MAP).find(k => code.source.includes(k));
-    if(matchKey){
-      const entry = SOURCE_MAP[matchKey];
+    const entry = SOURCE_MAP[code.source];
+    if(entry){
       const linkIcon=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
       sourceHtml=`<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer">${linkIcon}${entry.label}</a>`;
     }

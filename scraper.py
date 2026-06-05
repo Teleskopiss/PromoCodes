@@ -2,6 +2,7 @@ import json
 import re
 import os
 from datetime import datetime, timezone
+from html import unescape
 from bs4 import BeautifulSoup
 import requests
 
@@ -28,15 +29,86 @@ EIGHT_BP_REWARD = {
     "label": "8bpreward.win"
 }
 
+TAPLINK_GAMINATOR = {
+    "url": "https://taplink.cc/gaminator3000",
+    "label": "taplink.cc/gaminator"
+}
+
 TAPLINK_SLOTPARK = {
     "url": "https://taplink.cc/slotpark",
-    "label": "taplink.cc/slotpark"  # unique label so SOURCE_MAP can distinguish it from gaminator taplink
+    "label": "taplink.cc/slotpark"
 }
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
 }
+
+
+def fetch_with_fallback(url: str) -> str | None:
+    """
+    Try to fetch a URL directly first.
+    If that fails or returns a bot-challenge page, fall back to Google's cache.
+    Returns the raw text or None on total failure.
+    """
+    # Direct fetch
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=25)
+        resp.raise_for_status()
+        # Taplink serves a JS challenge page when blocking bots —
+        # detect it by checking for actual content keywords
+        text = unescape(resp.text)
+        has_content = bool(
+            re.search(r"BONUS|CODE|bonus|code", text, re.IGNORECASE)
+        )
+        if has_content:
+            print(f"  [fetch] direct OK for {url}")
+            return text
+        print(f"  [fetch] direct returned no useful content for {url}, trying cache")
+    except Exception as e:
+        print(f"  [fetch] direct failed for {url}: {e}")
+
+    # Google cache fallback
+    cache_url = f"https://webcache.googleusercontent.com/search?q=cache:{url}&hl=en"
+    try:
+        resp = requests.get(cache_url, headers=HEADERS, timeout=25)
+        resp.raise_for_status()
+        text = unescape(resp.text)
+        print(f"  [fetch] Google cache OK for {url}")
+        return text
+    except Exception as e:
+        print(f"  [fetch] Google cache also failed for {url}: {e}")
+
+    return None
+
+
+def extract_codes(raw: str, label: str) -> list:
+    """
+    Extract bonus codes from raw HTML/text using multiple patterns.
+    Covers:
+      - BONUS CODE : ra1n
+      - BONUS CODE: nb6sa
+      - CODE: nb4k
+      - CODE - XXXX
+      - CODE= XXXX
+    Min length 3 to catch short codes like 'ra1n'.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    results = []
+    seen = set()
+
+    for m in re.finditer(
+        r"(?:BONUS\s+)?CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
+        raw, re.IGNORECASE
+    ):
+        code = m.group(1).strip()
+        if code.upper() not in seen:
+            seen.add(code.upper())
+            results.append({"code": code, "date": today, "source": label})
+
+    return results
 
 
 def load_existing() -> dict:
@@ -145,79 +217,49 @@ def scrape_gaminator_site() -> list:
 
 def scrape_8bpreward() -> list:
     """
-    Scrape 8bpreward.win for gaminator bonus codes.
-    The page is a Blogger site — codes are embedded in the raw HTML source
-    (inside JS data blobs / post body HTML), not reliably in the rendered DOM.
-    We search resp.text directly after HTML-unescaping.
-    Pattern on page: BONUS CODE : ra1n
+    Blogger page — content may be inside JS blobs.
+    Uses fetch_with_fallback (direct → Google cache).
+    Pattern: BONUS CODE : ra1n
     """
-    try:
-        resp = requests.get(EIGHT_BP_REWARD["url"], headers=HEADERS, timeout=25)
-        resp.raise_for_status()
-    except Exception as e:
-        print(f"[8bpreward] fetch error: {e}")
+    print("[8bpreward] fetching...")
+    raw = fetch_with_fallback(EIGHT_BP_REWARD["url"])
+    if not raw:
+        print("[8bpreward] could not fetch page")
         return []
 
-    from html import unescape
-    raw = unescape(resp.text)
-
-    results = []
-    seen = set()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    # Pattern: "BONUS CODE : ra1n" — flexible spacing, colon/dash/equals separator
-    # Min length 3 to cover short codes like "ra1n"
-    for m in re.finditer(
-        r"BONUS\s+CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
-        raw, re.IGNORECASE
-    ):
-        code = m.group(1).strip()
-        if code.upper() not in seen:
-            seen.add(code.upper())
-            results.append({
-                "code": code,
-                "date": today,
-                "source": EIGHT_BP_REWARD["label"]
-            })
-
+    results = extract_codes(raw, EIGHT_BP_REWARD["label"])
     print(f"[8bpreward] found {len(results)} codes, sample: {[r['code'] for r in results[:5]]}")
+    return results
+
+
+def scrape_taplink_gaminator() -> list:
+    """
+    Scrape taplink.cc/gaminator3000 for Gaminator bonus codes.
+    Uses fetch_with_fallback (direct → Google cache).
+    """
+    print("[taplink-gaminator] fetching...")
+    raw = fetch_with_fallback(TAPLINK_GAMINATOR["url"])
+    if not raw:
+        print("[taplink-gaminator] could not fetch page")
+        return []
+
+    results = extract_codes(raw, TAPLINK_GAMINATOR["label"])
+    print(f"[taplink-gaminator] found {len(results)} codes, sample: {[r['code'] for r in results[:5]]}")
     return results
 
 
 def scrape_taplink_slotpark() -> list:
     """
     Scrape taplink.cc/slotpark for Slotpark bonus codes.
-    Taplink pages embed content in JSON inside <script> tags.
-    We search the raw HTML for any BONUS CODE / CODE: pattern.
+    Uses fetch_with_fallback (direct → Google cache).
     """
-    try:
-        resp = requests.get(TAPLINK_SLOTPARK["url"], headers=HEADERS, timeout=25)
-        resp.raise_for_status()
-    except Exception as e:
-        print(f"[taplink-slotpark] fetch error: {e}")
+    print("[taplink-slotpark] fetching...")
+    raw = fetch_with_fallback(TAPLINK_SLOTPARK["url"])
+    if not raw:
+        print("[taplink-slotpark] could not fetch page")
         return []
 
-    from html import unescape
-    raw = unescape(resp.text)
-
-    results = []
-    seen = set()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    # Match: "BONUS CODE : XXXX", "CODE: XXXX", "code - XXXX"
-    for m in re.finditer(
-        r"(?:BONUS\s+)?CODE\s*[:\-=]\s*([A-Za-z0-9]{3,20})",
-        raw, re.IGNORECASE
-    ):
-        code = m.group(1).strip()
-        if code.upper() not in seen:
-            seen.add(code.upper())
-            results.append({
-                "code": code,
-                "date": today,
-                "source": TAPLINK_SLOTPARK["label"]
-            })
-
+    results = extract_codes(raw, TAPLINK_SLOTPARK["label"])
     print(f"[taplink-slotpark] found {len(results)} codes, sample: {[r['code'] for r in results[:5]]}")
     return results
 
@@ -241,17 +283,24 @@ def merge(existing: list, new_entries: list) -> tuple:
 
 def main():
     data = load_existing()
-
     total_added = 0
 
-    # Gaminator
-    gaminator_new = scrape_coinscrazy("gaminator") + scrape_gaminator_site() + scrape_8bpreward()
+    # --- Gaminator ---
+    gaminator_new = (
+        scrape_coinscrazy("gaminator")
+        + scrape_gaminator_site()
+        + scrape_8bpreward()
+        + scrape_taplink_gaminator()
+    )
     data["gaminator"], added = merge(data["gaminator"], gaminator_new)
     total_added += added
     print(f"[gaminator] +{added} new codes (total: {len(data['gaminator'])})")
 
-    # Slotpark
-    slotpark_new = scrape_coinscrazy("slotpark") + scrape_taplink_slotpark()
+    # --- Slotpark ---
+    slotpark_new = (
+        scrape_coinscrazy("slotpark")
+        + scrape_taplink_slotpark()
+    )
     data["slotpark"], added = merge(data["slotpark"], slotpark_new)
     total_added += added
     print(f"[slotpark] +{added} new codes (total: {len(data['slotpark'])})")
