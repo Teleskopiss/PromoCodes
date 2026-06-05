@@ -36,7 +36,7 @@ body{font-family:var(--font);font-size:var(--text-base);color:var(--text);backgr
 button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .app{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:var(--nav-h);}
 
-/* Topbar — fits comfortably with no overflow */
+/* Topbar */
 .topbar{
   position:sticky;top:0;z-index:100;
   background:var(--surface);border-bottom:1px solid var(--border);
@@ -161,6 +161,17 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 
+// Source config — no coinscrazy, use TikTok/Taplink
+const SOURCE_MAP = {
+  gaminator: {
+    default: { url:'https://taplink.cc/gaminator3000', label:'TikTok' },
+    'gaminator.com': { url:'https://gaminator.com/en/promotions', label:'Gaminator' },
+  },
+  slotpark: {
+    default: { url:'https://www.tiktok.com/@slotparkslots', label:'TikTok' },
+  }
+};
+
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
 function saveUsed(s){ try{ localStorage.setItem(USED_KEY, JSON.stringify([...s])); }catch{} }
 
@@ -229,7 +240,6 @@ async function loadCodes(){
 
 refreshBtn.addEventListener('click',()=>{ loadCodes(); showToast('Refreshing...'); });
 
-// Countdown after dispatch
 let countdownTimer=null;
 function startCountdown(){
   clearInterval(countdownTimer);
@@ -245,7 +255,6 @@ function startCountdown(){
   countdownTimer=setInterval(tick,1000);
 }
 
-// Scraper trigger — with full error logging
 fetchBtn.addEventListener('click', async ()=>{
   fetchIcon.style.animation='spin .7s linear infinite';
   fetchLabel.textContent='Starting...';
@@ -268,7 +277,6 @@ fetchBtn.addEventListener('click', async ()=>{
       fetchIcon.style.animation='';
     }
   } catch(e){
-    // Network error = CORS preflight rejected OR no internet
     console.error('[dispatch] fetch threw:',e);
     showToast('Worker unreachable \u2014 check Cloudflare is deployed');
     fetchBtn.disabled=false;
@@ -313,15 +321,18 @@ function buildCard(code){
   const color=GAME_COLORS[code.game]||'#a78bfa';
   const card=document.createElement('div');
   card.className='card'+(used?' used':'');
+
+  // Source tag — no coinscrazy, use TikTok/Taplink
   let sourceHtml='';
-  if(code.source&&code.source.includes('.')){
-    const url=code.source==='coinscrazy.com'
-      ?(code.game==='slotpark'?'https://coinscrazy.com/slotpark-bonus-code-free-chips/':'https://coinscrazy.com/gaminator-free-coins/')
-      :(code.source==='gaminator.com'?'https://gaminator.com/en/promotions':null);
-    sourceHtml=url
-      ?`<a class="source-tag" href="${url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${code.source}</a>`
-      :`<span class="source-tag">${code.source}</span>`;
+  const gameMap = SOURCE_MAP[code.game];
+  if(gameMap){
+    const entry = (code.source && gameMap[code.source]) ? gameMap[code.source] : gameMap.default;
+    if(entry){
+      const linkIcon=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+      sourceHtml=`<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer">${linkIcon}${entry.label}</a>`;
+    }
   }
+
   card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
@@ -336,6 +347,7 @@ function buildCard(code){
       <span class="copy-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
     </div>
     ${sourceHtml?`<div>${sourceHtml}</div>`:''}`;
+
   card.querySelector('.code-row').addEventListener('click',()=>{
     navigator.clipboard.writeText(code.code).then(()=>{
       const row=card.querySelector('.code-row');
