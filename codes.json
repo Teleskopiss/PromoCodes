@@ -1,23 +1,4 @@
 {
-  "updated_at": "2026-06-05T03:55:17.349278+00:00",
-  "codes": [
-    {
-      "id": "1a0784f4671c",
-      "game": "gaminator",
-      "code": "NMF3X",
-      "sources": [
-        "taplink"
-      ],
-      "post_date": "2026-06-04T19:48:21.498817+00:00",
-      "found_at": "2026-06-04T18:47:33.199281+00:00",
-      "raw_sources": [
-        {
-          "platform": "taplink",
-          "url": "https://taplink.cc/gaminator3000"
-        }
-      ]
-    }
-  ],
   "gaminator": [
     {
       "code": "nmv5",
@@ -81,5 +62,6 @@
       "source": "coinscrazy.com",
       "found_at": "2026-06-05T05:18:17.259519+00:00"
     }
-  ]
+  ],
+  "updated_at": "2026-06-05T05:35:29.644212+00:00"
 }
