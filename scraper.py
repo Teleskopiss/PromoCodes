@@ -1,383 +1,190 @@
-#!/usr/bin/env python3
-"""
-scraper.py
-
-Facebook posts for both games always have CODE: or BONUS CODE: at the bottom
-of a longer post. We click every "See More" link before reading post text.
-
-Extraction rule: a token is a code ONLY if it directly follows
-  "CODE:" or "BONUS CODE:" (with any whitespace between colon and token).
-No bare-token scan. No blacklist. No fallback to whole-page text.
-"""
-
 import json
 import re
-import time
-import hashlib
-import logging
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-
+import os
+from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+import requests
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger(__name__)
+CODES_FILE = "codes.json"
 
-OUTPUT_FILE      = Path("codes.json")
-MAX_HISTORY_DAYS = 30
-
-GAMES = {
+SOURCES = {
     "gaminator": {
-        "facebook_url":   "https://www.facebook.com/gaminator3000",
-        "instagram_user": "gaminator",
-        "tiktok_user":    "gaminator3000",
-        "taplink_url":    "https://taplink.cc/gaminator3000",
+        "url": "https://coinscrazy.com/gaminator-free-coins/",
+        "label": "coinscrazy.com",
+        "prefix": "CODE:-"
     },
     "slotpark": {
-        "facebook_url":   "https://www.facebook.com/slotpark",
-        "instagram_user": "slotpark",
-        "tiktok_user":    "slotparkslots",
-        "taplink_url":    None,
-    },
+        "url": "https://coinscrazy.com/slotpark-bonus-code-free-chips/",
+        "label": "coinscrazy.com",
+        "prefix": "CODE:-"
+    }
+}
+
+GAMINATOR_SITE = {
+    "url": "https://gaminator.com/en/promotions",
+    "label": "gaminator.com",
+    "prefix": "CODE:"
 }
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
-    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 }
 
-# ------------------------------------------------------------------ #
-# EXTRACTION — strictly after CODE: or BONUS CODE:                    #
-# ------------------------------------------------------------------ #
 
-FB_CODE_RE = re.compile(
-    r'(?:bonus\s+code|code)\s*:\s*([A-Za-z0-9]{3,12})',
-    re.IGNORECASE,
-)
-
-GENERAL_CODE_RE = re.compile(
-    r'(?:bonus\s+code|promo\s+code|redeem\s+code|gift\s+code'
-    r'|reward\s+code|free\s+code|code)'
-    r'\s*:\s*([A-Za-z0-9]{3,12})',
-    re.IGNORECASE,
-)
+def load_existing() -> dict:
+    if os.path.exists(CODES_FILE):
+        with open(CODES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"gaminator": [], "slotpark": []}
 
 
-def _valid(token: str):
-    t = token.strip().upper()
-    if t.isdigit(): return None
-    if re.fullmatch(r'\d+[KMBkmb]', t): return None
-    if len(t) < 3: return None
-    return t
+def save(data: dict):
+    with open(CODES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def extract_fb(text: str) -> list:
-    found = set()
-    for m in FB_CODE_RE.finditer(text):
-        t = _valid(m.group(1))
-        if t:
-            log.info("  [FB] %s  <-- %r", t, m.group(0))
-            found.add(t)
-    return sorted(found)
+def existing_codes(entries: list) -> set:
+    return {e["code"] for e in entries}
 
 
-def extract_general(text: str) -> list:
-    found = set()
-    for m in GENERAL_CODE_RE.finditer(text):
-        t = _valid(m.group(1))
-        if t:
-            log.info("  [general] %s  <-- %r", t, m.group(0))
-            found.add(t)
-    return sorted(found)
-
-
-# ------------------------------------------------------------------ #
-# DATE HELPERS                                                        #
-# ------------------------------------------------------------------ #
-
-REL_RE = re.compile(r'(\d+)\s*(second|minute|hour|day|week|month|year)s?\s*ago', re.I)
-MON = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,
-       'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
-
-
-def parse_rel(text):
-    m = REL_RE.search(text)
-    if not m: return None
-    n, u = int(m.group(1)), m.group(2).lower()
-    d = {'second':timedelta(seconds=n),'minute':timedelta(minutes=n),
-         'hour':timedelta(hours=n),'day':timedelta(days=n),
-         'week':timedelta(weeks=n),'month':timedelta(days=n*30),
-         'year':timedelta(days=n*365)}.get(u, timedelta())
-    return (datetime.now(timezone.utc) - d).isoformat()
-
-
-def parse_abs(text):
-    now = datetime.now(timezone.utc)
-    for pat, order in [
-        (r'(\w+)\s+(\d{1,2}),?\s+(\d{4})', 'mdy'),
-        (r'(\d{1,2})\s+(\w+)\s+(\d{4})',   'dmy'),
-        (r'(\w+)\s+(\d{1,2})(?![\d,])',     'md'),
-    ]:
-        m = re.search(pat, text)
-        if not m: continue
+def parse_date(text: str) -> str | None:
+    """
+    Try to parse a date string like '05 January 2026' or '31 December 2025'.
+    Returns ISO date string 'YYYY-MM-DD' or None.
+    """
+    text = text.strip()
+    for fmt in ("%d %B %Y", "%B %d, %Y", "%d %b %Y"):
         try:
-            g = m.groups()
-            if order == 'mdy':   mo=MON.get(g[0][:3].lower()); dy=int(g[1]); yr=int(g[2])
-            elif order == 'dmy': dy=int(g[0]); mo=MON.get(g[1][:3].lower()); yr=int(g[2])
-            else:                mo=MON.get(g[0][:3].lower()); dy=int(g[1]); yr=now.year
-            if not mo: continue
-            return datetime(yr, mo, dy, 12, 0, tzinfo=timezone.utc).isoformat()
-        except Exception: continue
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
     return None
 
 
-def best_date(strings):
-    for s in strings:
-        d = parse_rel(s)
-        if d: return d
-    for s in strings:
-        d = parse_abs(s)
-        if d: return d
-    return None
-
-
-# ------------------------------------------------------------------ #
-# ITEM / PERSISTENCE                                                  #
-# ------------------------------------------------------------------ #
-
-def now_utc():  return datetime.now(timezone.utc)
-def iso_now():  return now_utc().isoformat()
-def make_id(game, code): return hashlib.md5(f"{game}:{code}".encode()).hexdigest()[:12]
-
-
-def build_item(game, code, platform, url="", post_date=None):
-    return {
-        "id":          make_id(game, code),
-        "game":        game,
-        "code":        code,
-        "sources":     [platform],
-        "post_date":   post_date or iso_now(),
-        "found_at":    iso_now(),
-        "raw_sources": [{"platform": platform, "url": url}],
-    }
-
-
-def load_existing():
-    if not OUTPUT_FILE.exists(): return []
+def scrape_coinscrazy(game: str) -> list:
+    """
+    Scrape coinscrazy page for CODE:- entries.
+    Each code block is preceded by a date line.
+    Returns list of {code, date, source} dicts.
+    """
+    src = SOURCES[game]
     try:
-        data = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
-        return data.get("codes", []) if isinstance(data, dict) else data
+        resp = requests.get(src["url"], headers=HEADERS, timeout=20)
+        resp.raise_for_status()
     except Exception as e:
-        log.warning("load failed: %s", e); return []
+        print(f"[{game}] coinscrazy fetch error: {e}")
+        return []
 
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-def save_codes(items):
-    OUTPUT_FILE.write_text(
-        json.dumps({"updated_at": iso_now(), "codes": items}, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-
-def merge_codes(existing, new_items):
-    by_key = {f"{i['game']}::{i['code']}": i for i in existing}
-    for item in new_items:
-        key = f"{item['game']}::{item['code']}"
-        if key not in by_key:
-            by_key[key] = item; continue
-        cur = by_key[key]
-        seen = {(s["platform"], s.get("url","")) for s in cur.get("raw_sources",[])}
-        for src in item.get("raw_sources",[]):
-            p = (src["platform"], src.get("url",""))
-            if p not in seen:
-                cur.setdefault("raw_sources",[]).append(src); seen.add(p)
-        cur["sources"] = sorted({s["platform"] for s in cur.get("raw_sources",[])})
-        if item.get("post_date") and item["post_date"] < cur.get("post_date", item["post_date"]):
-            cur["post_date"] = item["post_date"]
-    cutoff = now_utc() - timedelta(days=MAX_HISTORY_DAYS)
-    merged = [v for v in by_key.values()
-              if datetime.fromisoformat(v.get("found_at", iso_now())) >= cutoff]
-    merged.sort(key=lambda x: x.get("post_date", x["found_at"]), reverse=True)
-    return merged
-
-
-# ------------------------------------------------------------------ #
-# SCRAPERS                                                            #
-# ------------------------------------------------------------------ #
-
-def pw_html(page, url, wait_ms=4000):
-    try:
-        page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(wait_ms)
-        return page.content()
-    except Exception as e:
-        log.warning("pw_html %s: %s", url, e); return ""
-
-
-def expand_fb_posts(page):
-    """
-    Click every 'See More' link on the mbasic Facebook page so that
-    truncated posts are fully expanded before we read the HTML.
-    mbasic 'See More' links have href containing 'story_fbid' or 'refid'
-    but the simplest selector is any <a> whose text is exactly 'See More'.
-    """
-    try:
-        # Click up to 20 "See More" links
-        for _ in range(20):
-            see_more = page.locator('a', has_text=re.compile(r'^See [Mm]ore$')).first
-            if not see_more.is_visible(timeout=1500):
-                break
-            see_more.click()
-            page.wait_for_timeout(800)
-    except Exception:
-        pass  # no more links or timeout — fine
-
-
-def scrape_taplink(page, game, url):
-    log.info("[%s] Taplink", game)
-    soup = BeautifulSoup(pw_html(page, url, 5000), "html.parser")
-    text = soup.get_text(" ", strip=True)
-    log.info("  taplink snippet: %s", text[:300])
-    return [build_item(game, c, "taplink", url, iso_now()) for c in extract_general(text)]
-
-
-def scrape_facebook(page, game, url):
-    """
-    1. Load mbasic Facebook page with Playwright.
-    2. Scroll to load more posts.
-    3. Click every 'See More' to expand truncated posts.
-    4. Extract codes ONLY via CODE: / BONUS CODE: pattern.
-    5. No fallback to whole-page text.
-    """
-    log.info("[%s] Facebook", game)
-    mbasic = url.replace("www.facebook.com", "mbasic.facebook.com")
+    # Gather all bold/strong text elements in document order
     results = []
-    try:
-        page.goto(mbasic, wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(3000)
+    current_date = None
 
-        # Scroll to load more posts
-        for _ in range(4):
-            page.keyboard.press("End")
-            page.wait_for_timeout(1200)
+    # Walk every <strong> or <b> tag in the article body
+    content = soup.find("article") or soup.find("main") or soup.body
+    if not content:
+        return []
 
-        # Expand truncated posts
-        expand_fb_posts(page)
+    for tag in content.find_all(["strong", "b", "p"]):
+        text = tag.get_text(" ", strip=True)
 
-        soup = BeautifulSoup(page.content(), "html.parser")
-        posts = soup.find_all("div", attrs={"data-ft": True})
-        log.info("  [%s] FB post blocks after expand: %d", game, len(posts))
+        # Check if it looks like a date line e.g. "Updated On: 05 January 2026" or "04 January 2026"
+        date_match = re.search(
+            r"(?:Updated On:\s*)?(\d{1,2}\s+[A-Za-z]+\s+\d{4})", text
+        )
+        if date_match:
+            parsed = parse_date(date_match.group(1))
+            if parsed:
+                current_date = parsed
+            continue
 
-        if not posts:
-            log.warning("  [%s] FB: no post blocks (login wall?). Skipping — no fallback.", game)
-            return []
+        # Check if it's a code line
+        code_match = re.match(r"CODE:-\s*([A-Za-z0-9]+)", text, re.IGNORECASE)
+        if code_match:
+            code = code_match.group(1).strip()
+            results.append({
+                "code": code,
+                "date": current_date,
+                "source": src["label"]
+            })
 
-        for post in posts:
-            text = post.get_text(" ", strip=True)
-            log.debug("  post snippet: %s", text[:120])
-            codes = extract_fb(text)
-            if not codes:
-                continue
-
-            dates = []
-            for el in post.find_all("abbr"):
-                dates.append(el.get("title", "") or el.get_text())
-            for el in post.find_all("span"):
-                t = el.get_text(strip=True)
-                if re.search(r'ago|\d{4}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec', t, re.I):
-                    dates.append(t)
-            post_date = best_date(dates)
-
-            for code in codes:
-                log.info("  [%s] FB code=%s  post_date=%s", game, code, post_date)
-                results.append(build_item(game, code, "facebook", url, post_date))
-
-    except Exception as e:
-        log.error("[%s] Facebook error: %s", game, e)
+    print(f"[{game}] coinscrazy: found {len(results)} codes")
     return results
 
 
-def scrape_instagram(page, game, username):
-    log.info("[%s] Instagram @%s", game, username)
-    url = f"https://www.instagram.com/{username}/"
-    soup = BeautifulSoup(pw_html(page, url, 5000), "html.parser")
-    text = soup.get_text(" ", strip=True)
-    log.info("  IG snippet: %s", text[:300])
-    return [build_item(game, c, "instagram", url, iso_now()) for c in extract_general(text)]
+def scrape_gaminator_site() -> list:
+    """
+    Scrape gaminator.com promotions page for CODE: [code] entries.
+    No date available — use today's date as found_at.
+    """
+    try:
+        resp = requests.get(GAMINATOR_SITE["url"], headers=HEADERS, timeout=20)
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"[gaminator-site] fetch error: {e}")
+        return []
 
-
-def scrape_tiktok(page, game, username):
-    log.info("[%s] TikTok @%s", game, username)
-    url = f"https://www.tiktok.com/@{username}"
-    soup = BeautifulSoup(pw_html(page, url, 6000), "html.parser")
-
-    items = (
-        soup.find_all(attrs={"data-e2e": re.compile(r"user-post", re.I)}) or
-        soup.find_all("div", class_=re.compile(r"DivItemContainer", re.I))
-    )
+    text = resp.text
+    codes = re.findall(r"CODE:\s*([A-Za-z0-9]+)", text, re.IGNORECASE)
     results = []
-    if not items:
-        text = soup.get_text(" ", strip=True)
-        log.info("  TT page snippet: %s", text[:300])
-        return [build_item(game, c, "tiktok", url) for c in extract_general(text)]
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    for code in set(codes):
+        results.append({
+            "code": code.strip(),
+            "date": today,
+            "source": GAMINATOR_SITE["label"]
+        })
 
-    for item in items:
-        text = item.get_text(" ", strip=True)
-        codes = extract_general(text)
-        if not codes: continue
-        dates = []
-        for el in item.find_all(["span", "p", "time"]):
-            t = el.get("datetime") or el.get_text(strip=True)
-            if t and re.search(r'ago|\d{4}|\d+-\d+-\d+', t, re.I):
-                dates.append(t)
-        post_date = best_date(dates)
-        for code in codes:
-            results.append(build_item(game, code, "tiktok", url, post_date))
+    print(f"[gaminator-site] gaminator.com: found {len(results)} codes")
     return results
 
 
-# ------------------------------------------------------------------ #
-# MAIN                                                                #
-# ------------------------------------------------------------------ #
+def merge(existing: list, new_entries: list) -> tuple[list, int]:
+    """
+    Merge new entries into existing list, deduplicating by code.
+    Returns (merged_list, added_count).
+    """
+    known = existing_codes(existing)
+    added = 0
+    now = datetime.now(timezone.utc).isoformat()
+    for entry in new_entries:
+        if entry["code"] not in known:
+            existing.append({
+                "code": entry["code"],
+                "date": entry.get("date"),
+                "source": entry.get("source"),
+                "found_at": now
+            })
+            known.add(entry["code"])
+            added += 1
+    return existing, added
+
 
 def main():
-    existing  = load_existing()
-    new_items = []
+    data = load_existing()
+    if "gaminator" not in data:
+        data["gaminator"] = []
+    if "slotpark" not in data:
+        data["slotpark"] = []
 
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
-        ctx = browser.new_context(
-            user_agent=HEADERS["User-Agent"],
-            locale="en-US",
-            viewport={"width": 1280, "height": 900},
-        )
-        page = ctx.new_page()
+    total_added = 0
 
-        for game, cfg in GAMES.items():
-            log.info("====== %s ======", game)
+    # --- Gaminator: coinscrazy + gaminator.com ---
+    gaminator_new = scrape_coinscrazy("gaminator") + scrape_gaminator_site()
+    data["gaminator"], added = merge(data["gaminator"], gaminator_new)
+    total_added += added
+    print(f"[gaminator] +{added} new codes")
 
-            if cfg.get("taplink_url"):
-                try: new_items.extend(scrape_taplink(page, game, cfg["taplink_url"]))
-                except Exception as e: log.error("taplink: %s", e)
-                time.sleep(2)
+    # --- Slotpark: coinscrazy ---
+    slotpark_new = scrape_coinscrazy("slotpark")
+    data["slotpark"], added = merge(data["slotpark"], slotpark_new)
+    total_added += added
+    print(f"[slotpark] +{added} new codes")
 
-            try: new_items.extend(scrape_facebook(page, game, cfg["facebook_url"]))
-            except Exception as e: log.error("facebook: %s", e)
-            time.sleep(2)
-
-            try: new_items.extend(scrape_instagram(page, game, cfg["instagram_user"]))
-            except Exception as e: log.error("instagram: %s", e)
-            time.sleep(2)
-
-            try: new_items.extend(scrape_tiktok(page, game, cfg["tiktok_user"]))
-            except Exception as e: log.error("tiktok: %s", e)
-            time.sleep(2)
-
-        browser.close()
-
-    merged = merge_codes(existing, new_items)
-    save_codes(merged)
-    log.info("Done. total=%d new=%d", len(merged), len(new_items))
+    save(data)
+    print(f"Done. Total new codes added: {total_added}")
 
 
 if __name__ == "__main__":
