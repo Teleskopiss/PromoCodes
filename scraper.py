@@ -108,6 +108,22 @@ def parse_date_plain(text: str) -> str | None:
     return None
 
 
+# Words that can appear after "BONUS CODE :" but are NOT actual codes.
+# These come from the page description text, not the widget.
+_BONUS_CODE_BLACKLIST = {
+    "THIS", "THE", "AND", "FOR", "ARE", "NOT", "YOU", "CAN",
+    "ALL", "ANY", "USE", "NEW", "GET", "OUR", "HAS", "ITS",
+    "WITH", "FROM", "THAT", "HAVE", "WILL", "THEY", "BEEN",
+    "WERE", "ALSO", "INTO", "YOUR", "THEIR", "WHAT", "WHEN",
+    "CODE", "BONUS", "CODES", "LINK", "GAME", "GAMES", "PLAY",
+    "SAVE", "PAGE", "SITE", "DAILY", "FREE", "COINS", "CHIP",
+    "CHIPS", "SPIN", "SPINS", "ENTER", "CLICK", "OPEN", "HERE",
+    "MORE", "EACH", "SOME", "THAN", "THEN", "ONLY", "JUST",
+    "LIKE", "KNOW", "MAKE", "TAKE", "GIVE", "FIND", "SHOW",
+    "NEED", "WANT", "HELP", "WORK", "USED", "BEEN", "COME",
+}
+
+
 def scrape_8bpreward() -> list:
     """
     Scrapes https://www.8bpreward.win/2025/11/gaminator-codes.html
@@ -116,17 +132,19 @@ def scrape_8bpreward() -> list:
 
     1. ACTUAL CODES — only from the exact pattern:
            BONUS CODE : <code>
-       This is displayed in a styled widget box at the top.
-       We deliberately ignore 'CODE:' or 'bonus:' that appear elsewhere
-       in the page description text (those are explanatory, not real codes).
+       The page has a special widget box near the top that shows the current
+       active code. We look for the text node right after the "NEW BONUS CODE"
+       button label, specifically in the pattern:
+           NEW BONUS CODE   BONUS CODE : ra1n
+       We search in multiple ways:
+         a) Look for elements containing "NEW BONUS CODE" and extract nearby text
+         b) Scan the raw HTML source for the pattern before any HTML processing
+         c) Fallback: scan soup text, but apply a strict blacklist to avoid
+            matching words like "this" from description sentences
 
-    2. PENDING CODES — the page updates with COLLECT button links
-       (gam.to/... URLs) grouped by date section, before other sites
-       publish the actual code text. For each date section, we count
-       how many active COLLECT links exist (not 'Expired'). We emit
-       one 'pending' entry per COLLECT link found for that date.
-       These are stored with pending=True so the UI can show
-       "Pending code" placeholders.
+    2. PENDING CODES — the page often posts COLLECT button links (gam.to URLs)
+       before any code text is published. For each date section, we count the
+       active COLLECT links (not Expired). We emit one pending entry per link.
     """
     print("[8bpreward] fetching...")
     html = fetch_html(EIGHT_BP_REWARD["url"])
@@ -140,24 +158,56 @@ def scrape_8bpreward() -> list:
     seen_codes = set()
 
     # ----------------------------------------------------------------
-    # 1. Find the BONUS CODE widget
-    #    The widget contains text like: "BONUS CODE : ra1n"
-    #    We search the entire soup text but ONLY for this exact pattern:
-    #      BONUS CODE : <alphanum>
-    #    We do NOT match bare 'CODE:' or 'bonus:' to avoid false positives.
+    # STRATEGY A: Scan raw HTML source directly for the widget pattern.
+    #
+    # The widget renders something like:
+    #   <span ...>NEW BONUS CODE</span>BONUS CODE : ra1n
+    # or inside a table cell:
+    #   <td ...><span ...>NEW BONUS CODE</span>BONUS CODE : ra1n</td>
+    #
+    # By scanning the raw HTML we avoid any text-normalization issues
+    # from BeautifulSoup's get_text() that might cause the regex to miss
+    # or incorrectly split the match.
+    #
+    # We use a strict pattern that requires:
+    #   - The text "BONUS CODE" (case-insensitive)
+    #   - Optional whitespace
+    #   - A colon ":"
+    #   - Optional whitespace
+    #   - The code: alphanumeric, 3–12 characters
+    #   - Immediately followed by a word boundary (space, <, end of string)
+    #     so we don't match partial HTML attribute values
     # ----------------------------------------------------------------
-    full_text = unescape(soup.get_text(" ", strip=True))
+    raw_html_unescaped = unescape(html)
 
-    # Strict pattern: "BONUS CODE" followed by optional whitespace, colon,
-    # optional whitespace, then the code (alphanumeric, 3-20 chars).
-    # The space between BONUS and CODE is mandatory.
-    for m in re.finditer(
-        r"BONUS\s+CODE\s*:\s*([A-Za-z0-9]{3,20})",
-        full_text
-    ):
+    # Strip HTML tags for a clean text pass on the raw source
+    raw_text_only = re.sub(r"<[^>]+>", " ", raw_html_unescaped)
+    raw_text_only = re.sub(r"\s+", " ", raw_text_only)
+
+    print(f"  [8bpreward] raw text length: {len(raw_text_only)}")
+
+    # Find all occurrences of "BONUS CODE : <something>"
+    # We deliberately require "BONUS CODE" (both words) to avoid bare "CODE:"
+    # matches in description text.
+    raw_matches = list(re.finditer(
+        r"BONUS\s+CODE\s*:\s*([A-Za-z0-9]{2,12})(?=[\s<,\.!\?]|$)",
+        raw_text_only,
+        re.IGNORECASE
+    ))
+
+    print(f"  [8bpreward] strategy A found {len(raw_matches)} BONUS CODE match(es) in raw text")
+
+    for m in raw_matches:
         code = m.group(1).strip()
-        if code.upper() not in seen_codes:
-            seen_codes.add(code.upper())
+        code_upper = code.upper()
+
+        # Skip blacklisted words — these appear in description sentences
+        if code_upper in _BONUS_CODE_BLACKLIST:
+            print(f"  [8bpreward] skipping blacklisted word: {code}")
+            continue
+
+        if code_upper not in seen_codes:
+            seen_codes.add(code_upper)
             print(f"  [8bpreward] found BONUS CODE: {code}")
             results.append({
                 "code": code,
@@ -167,87 +217,128 @@ def scrape_8bpreward() -> list:
             })
 
     # ----------------------------------------------------------------
-    # 2. Parse date sections and count COLLECT buttons
+    # STRATEGY B: Look for the "NEW BONUS CODE" widget element directly.
     #
-    #    Page structure (Blogger):
-    #      <div> or <table> containing date heading e.g. "6th June 2026"
-    #      followed by table rows with:
-    #        #  | GIFT  | LINK
-    #        1  | Coins | <a href="https://gam.to/...">COLLECT</a>
-    #        2  | Coins | <a href="https://gam.to/...">COLLECT</a>
+    # The page has a styled element (span/div/td) with class or inline style
+    # containing the text "NEW BONUS CODE". The actual code text appears
+    # immediately adjacent (in the same parent container).
     #
-    #    Strategy: find all text nodes matching a date pattern,
-    #    then for each date find the following table rows with gam.to links.
+    # We find that container, extract ALL text from it, and scan for
+    # "BONUS CODE : <code>".
     # ----------------------------------------------------------------
-
-    # Find all elements whose text looks like a date heading
-    # e.g. "6th June 2026", "21st January 2026"
-    date_pattern = re.compile(
-        r"^\s*(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4})\s*$",
-        re.IGNORECASE
+    new_bonus_tags = soup.find_all(
+        lambda tag: tag.get_text(strip=True).upper() == "NEW BONUS CODE"
     )
+    print(f"  [8bpreward] strategy B: found {len(new_bonus_tags)} 'NEW BONUS CODE' element(s)")
 
-    # Collect all tags that are date headings
-    date_tags = []
-    for tag in soup.find_all(True):
-        txt = tag.get_text(" ", strip=True)
-        if date_pattern.match(txt) and len(txt) < 40:
-            # Avoid matching parent containers that contain more than just the date
-            if len(list(tag.children)) <= 3:
-                date_tags.append(tag)
-
-    # Deduplicate: keep only innermost tags per date string
-    seen_date_tags = {}
-    for tag in date_tags:
-        txt = tag.get_text(" ", strip=True)
-        # prefer the tag with fewest descendants (most specific)
-        existing = seen_date_tags.get(txt)
-        if existing is None or len(list(tag.descendants)) < len(list(existing.descendants)):
-            seen_date_tags[txt] = tag
-    date_tags = list(seen_date_tags.values())
-
-    print(f"  [8bpreward] found {len(date_tags)} date sections: {[t.get_text(strip=True) for t in date_tags[:5]]}")
-
-    # Track which (date, slot_number) pending entries already exist
-    # We use a composite key: date + slot index to avoid duplication on re-runs
-    pending_keys = set()
-
-    for date_tag in date_tags:
-        raw_date_str = date_tag.get_text(" ", strip=True)
-        parsed_date = parse_date_ordinal(raw_date_str) or today
-
-        # Find the parent container that holds both the date and the table
-        # Walk up until we find a tag that contains <a href="gam.to"> links
-        container = date_tag
-        collect_links = []
-        for _ in range(6):  # walk up max 6 levels
+    for tag in new_bonus_tags:
+        # Check the parent container (up to 3 levels)
+        container = tag
+        for _ in range(3):
             container = container.parent
             if container is None:
                 break
-            collect_links = [
-                a for a in container.find_all("a", href=True)
-                if "gam.to" in a["href"] and a.get_text(strip=True).upper() == "COLLECT"
-            ]
-            if collect_links:
-                break
+            container_text = container.get_text(" ", strip=True)
+            for m in re.finditer(
+                r"BONUS\s+CODE\s*:\s*([A-Za-z0-9]{2,12})(?=[\s,\.!\?]|$)",
+                container_text,
+                re.IGNORECASE
+            ):
+                code = m.group(1).strip()
+                code_upper = code.upper()
+                if code_upper in _BONUS_CODE_BLACKLIST:
+                    print(f"  [8bpreward] skipping blacklisted word (B): {code}")
+                    continue
+                if code_upper not in seen_codes:
+                    seen_codes.add(code_upper)
+                    print(f"  [8bpreward] strategy B found code: {code}")
+                    results.append({
+                        "code": code,
+                        "date": today,
+                        "source": EIGHT_BP_REWARD["label"],
+                        "pending": False
+                    })
 
-        if not collect_links:
-            print(f"  [8bpreward] {raw_date_str}: no COLLECT links found")
+    # ----------------------------------------------------------------
+    # PARSE DATE SECTIONS AND COUNT COLLECT BUTTONS
+    #
+    # Page structure (Blogger table layout):
+    #   <table> containing a row with date heading e.g. "6th June 2026"
+    #   followed by rows:
+    #     # | GIFT  | LINK
+    #     1 | Coins | <a href="https://gam.to/...">COLLECT</a>
+    #     2 | Coins | <a href="https://gam.to/...">COLLECT</a>
+    #
+    # Strategy:
+    #   1. Find ALL <a> tags where href contains "gam.to" and text is "COLLECT"
+    #   2. For each such link, walk UP the DOM to find the nearest date heading
+    #   3. Group links by date
+    #   4. Emit one pending entry per active COLLECT link
+    # ----------------------------------------------------------------
+
+    date_pattern = re.compile(
+        r"(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4})",
+        re.IGNORECASE
+    )
+
+    # Find ALL collect links on the page
+    all_collect_links = [
+        a for a in soup.find_all("a", href=True)
+        if "gam.to" in a["href"] and a.get_text(strip=True).upper() == "COLLECT"
+    ]
+
+    print(f"  [8bpreward] found {len(all_collect_links)} total COLLECT link(s) on page")
+
+    # For each collect link, find its associated date by walking up the DOM
+    # and searching siblings/ancestors for a date-like text node.
+    def find_date_for_link(link_tag) -> str | None:
+        """Walk up the DOM from a COLLECT link to find the nearest date heading."""
+        node = link_tag
+        for _ in range(10):  # walk up max 10 levels
+            node = node.parent
+            if node is None:
+                break
+            # Search all text within this container for a date pattern
+            # but stop if we find it to avoid going too far up
+            text = node.get_text(" ", strip=True)
+            m = date_pattern.search(text)
+            if m:
+                parsed = parse_date_ordinal(m.group(1))
+                if parsed:
+                    return parsed
+        return None
+
+    # Group collect links by date
+    date_to_links: dict[str, list] = {}
+    for link in all_collect_links:
+        link_date = find_date_for_link(link) or today
+        if link_date not in date_to_links:
+            date_to_links[link_date] = []
+        date_to_links[link_date].append(link)
+
+    # Get set of dates already having a real code (from this scrape run)
+    real_code_dates = {r["date"] for r in results if not r.get("pending")}
+
+    pending_keys = set()
+    for link_date, links in sorted(date_to_links.items(), reverse=True):
+        print(f"  [8bpreward] {link_date}: {len(links)} active COLLECT link(s)")
+
+        # If we already found a real code for this date, don't add pending
+        if link_date in real_code_dates:
+            print(f"  [8bpreward] skipping pending for {link_date} — real code already found")
             continue
 
-        print(f"  [8bpreward] {raw_date_str} ({parsed_date}): {len(collect_links)} COLLECT link(s)")
-
-        for i, link in enumerate(collect_links):
-            pending_key = f"{parsed_date}_{i}"
+        for i, link in enumerate(links):
+            slot_num = len(links) - i  # number from bottom: newest = highest
+            pending_key = f"{link_date}_{slot_num}"
             if pending_key not in pending_keys:
                 pending_keys.add(pending_key)
-                slot_num = len(collect_links) - i  # highest number = newest
                 results.append({
-                    "code": f"PENDING_{parsed_date}_{slot_num}",  # unique stable ID
-                    "date": parsed_date,
+                    "code": f"PENDING_{link_date}_{slot_num}",
+                    "date": link_date,
                     "source": EIGHT_BP_REWARD["label"],
                     "pending": True,
-                    "collect_url": link["href"]  # the actual gam.to link
+                    "collect_url": link["href"]
                 })
 
     real = [r for r in results if not r.get("pending")]
@@ -295,16 +386,6 @@ def save(data: dict):
 def existing_codes(entries: list) -> set:
     """Returns set of uppercased code strings already stored."""
     return {e["code"].upper() for e in entries}
-
-
-def parse_date_plain(text: str) -> str | None:
-    text = text.strip()
-    for fmt in ("%d %B %Y", "%B %d, %Y", "%d %b %Y", "%d.%m.%Y"):
-        try:
-            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
-        except ValueError:
-            continue
-    return None
 
 
 def scrape_coinscrazy(game: str) -> list:
