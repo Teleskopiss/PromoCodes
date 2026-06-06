@@ -47,6 +47,12 @@
       "date": "2026-06-05",
       "source": "taplink.cc/gaminator",
       "found_at": "2026-06-05T17:03:31.566271+00:00"
+    },
+    {
+      "code": "nmn3x",
+      "date": "2026-06-06",
+      "source": "coinscrazy.com",
+      "found_at": "2026-06-06T11:58:15.092853+00:00"
     }
   ],
   "slotpark": [
@@ -91,7 +97,13 @@
       "date": "2026-06-05",
       "source": "coinscrazy.com",
       "found_at": "2026-06-05T16:42:12.076301+00:00"
+    },
+    {
+      "code": "bv43g",
+      "date": "2026-06-06",
+      "source": "coinscrazy.com",
+      "found_at": "2026-06-06T11:58:15.964408+00:00"
     }
   ],
-  "updated_at": "2026-06-06T10:23:01.183092+00:00"
+  "updated_at": "2026-06-06T11:58:15.964441+00:00"
 }
