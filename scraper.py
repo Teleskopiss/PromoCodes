@@ -121,32 +121,53 @@ _BLACKLIST = {
 
 def extract_bonus_code_from_game_announce(soup: BeautifulSoup) -> str | None:
     """
-    The active bonus code lives inside <div class="game-announce"> as plain text:
+    The active bonus code lives inside <div class="game-announce"> as plain text.
+    Several possible formats:
         BONUS CODE: ra1n
+        BONUS CODE ra1n
+        CODE: ra1n
+        CODE ra1n
+        BONUS CODE:ra1n  (no space after colon)
 
-    This is the canonical location on 8bpreward.win — always check here first.
-    The 'NEW BONUS CODE' button is a separate element in the same container;
-    we ignore it and only read the text of game-announce itself.
+    We also try extracting the LAST short alphanumeric token in the div
+    as a broad fallback, in case the colon/formatting varies.
     """
     announce = soup.find("div", class_="game-announce")
     if announce:
         text = announce.get_text(" ", strip=True)
         print(f"  [8bpreward] game-announce text: {text!r}")
-        m = re.search(r"BONUS\s+CODE\s*[:\-]\s*([A-Za-z0-9]{2,15})", text, re.IGNORECASE)
+
+        # Primary: BONUS CODE (optional colon/dash/space) followed by token
+        m = re.search(
+            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})\b",
+            text, re.IGNORECASE
+        )
         if m:
             code = m.group(1).strip()
             if code.upper() not in _BLACKLIST:
-                print(f"  [8bpreward] game-announce code: {code}")
+                print(f"  [8bpreward] game-announce code (primary): {code}")
                 return code
-        else:
-            print(f"  [8bpreward] game-announce found but no BONUS CODE pattern in: {text!r}")
+            print(f"  [8bpreward] primary match '{code}' is blacklisted, trying last-token fallback")
+
+        # Fallback: grab every word-like token, take the last short alphanumeric one
+        # that looks like a real code (mixed alpha+digit or all alpha, 2-15 chars)
+        tokens = re.findall(r"[A-Za-z0-9]{2,15}", text)
+        for token in reversed(tokens):
+            if token.upper() not in _BLACKLIST and re.search(r"[A-Za-z]", token):
+                print(f"  [8bpreward] game-announce code (last-token fallback): {token}")
+                return token
+
+        print(f"  [8bpreward] game-announce found but no code extracted from: {text!r}")
     else:
         print("  [8bpreward] div.game-announce NOT found — checking fallback divs")
 
     # Fallback: any div with class containing 'announce' or 'bonus'
     for div in soup.find_all("div", class_=re.compile(r"announce|bonus", re.IGNORECASE)):
         text = div.get_text(" ", strip=True)
-        m = re.search(r"BONUS\s+CODE\s*[:\-]\s*([A-Za-z0-9]{2,15})", text, re.IGNORECASE)
+        m = re.search(
+            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})\b",
+            text, re.IGNORECASE
+        )
         if m:
             code = m.group(1).strip()
             if code.upper() not in _BLACKLIST:
@@ -411,7 +432,7 @@ def merge(existing: list, new_entries: list) -> tuple:
                 continue
         else:
             if code_key in known_codes:
-                # Already known — just update found_at to refresh it
+                # Already known — just skip (found_at stays as original discovery time)
                 continue
 
             # For single-code sources: mark old code as replaced

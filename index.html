@@ -64,7 +64,7 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .main{flex:1;padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);}
 .card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);box-shadow:var(--shadow);}
 .card.used{opacity:.4;}
-.card.expired{border-color:var(--error);}
+.card.expired{border-color:rgba(248,113,113,.3);}
 .card.pending-card{border-color:var(--pending);background:var(--surface);}
 .card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);}
 .game-badge{display:flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:600;}
@@ -73,7 +73,7 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .code-row{display:flex;align-items:center;gap:var(--space-2);background:var(--surface-3);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);border:1px solid var(--border);cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;}
 .code-row:active{transform:scale(.97);}
 .code-row.copied{background:var(--success-dim);border-color:var(--success);}
-.code-row.expired-row{background:var(--error-dim);border-color:var(--error);}
+.code-row.expired-row{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.35);}
 .code-text{flex:1;font-family:'Courier New',monospace;font-size:var(--text-lg);font-weight:700;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .code-text.expired-text{color:var(--error);}
 .card.used .code-text{text-decoration:line-through;color:var(--text-faint);}
@@ -151,10 +151,9 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 
-// Sources where codes expire after 24h (coinscrazy.com style — many daily codes)
+// Sources where codes expire after 24h
 const EXPIRES_24H_SOURCES = new Set(['coinscrazy.com', 'gaminator.com']);
-// Sources where a code is valid until explicitly replaced (taplink, 8bpreward)
-// These show as expired only when replaced=true is set by the scraper
+// Sources where ONE code is active at a time — expires only when replaced=true
 const SINGLE_CODE_SOURCES = new Set(['taplink.cc/gaminator','taplink.cc/slotpark','8bpreward.win']);
 
 const SOURCE_MAP = {
@@ -163,6 +162,7 @@ const SOURCE_MAP = {
   'taplink.cc/slotpark': { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
   'gaminator.com':       { url:'https://gaminator.com/en/promotions',                      label:'Gaminator' },
   '8bpreward.win':       { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
+  'coinscrazy.com':      { url:'https://coinscrazy.com/gaminator-free-coins/',             label:'CoinsCrazy' },
 };
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
@@ -216,17 +216,20 @@ function isExpired(e){
 }
 
 /**
- * A code is "new" if:
- * - it is NOT expired
- * - it was found less than 48h ago (for coinscrazy)
- * - OR it is the current active code for a single-code source
+ * A code shows in the "New" tab if:
+ * - It is NOT expired
+ * - AND it is not used
+ * - Pending codes always show in New
+ * - For single-code sources (taplink/8bpreward): show if not replaced
+ * - For coinscrazy: show if found within last 48h
  */
 function isNew(e){
-  if(e.pending) return true; // pending codes always show in New tab
+  if(e.pending) return true;
   if(isExpired(e)) return false;
+  if(usedSet.has(e.id)) return false;
   const src = e.source || '';
-  if(SINGLE_CODE_SOURCES.has(src)) return !e.replaced; // active = new
-  // coinscrazy: new if found within last 48h AND not expired
+  if(SINGLE_CODE_SOURCES.has(src)) return !e.replaced;
+  // coinscrazy / gaminator.com: new if found within 48h and not yet expired (24h)
   return (Date.now() - new Date(e.found_at || e.date).getTime()) < 48 * 3600 * 1000;
 }
 
@@ -347,17 +350,22 @@ function render(){
   if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
 
   if(activeTab==='new'){
-    // New tab: non-expired active codes + pending
+    // New: active non-expired codes + pending
     codes=codes.filter(c=>isNew(c));
   } else if(activeTab==='used'){
-    // Used tab: codes user has marked as used (never pending)
+    // Used: codes the user has tapped (excludes pending)
     codes=codes.filter(c=>!c.pending && usedSet.has(c.id));
   }
-  // All tab: show everything (expired shown in red, pending shown as pending)
+  // All: everything — expired shown in red, pending as pending card
 
   mainEl.innerHTML='';
   if(!codes.length){
-    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${activeTab==='used'?'No used codes yet.':activeTab==='new'?'No active codes right now.':'No promo codes found.'}</p></div>`;
+    const msgs = {
+      used: 'No used codes yet.',
+      new:  'No active codes right now.',
+      all:  'No promo codes found.'
+    };
+    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${msgs[activeTab]||msgs.all}</p></div>`;
     return;
   }
   codes.forEach(code=>mainEl.appendChild(code.pending?buildPendingCard(code):buildCard(code)));
@@ -421,6 +429,9 @@ function buildCard(code){
   const expiredBadge = expired ? '<span style="font-size:var(--text-xs);color:var(--error);font-weight:700;margin-left:4px">EXPIRED</span>' : '';
   const newBadge     = _new && !used && !expired ? '<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>' : '';
 
+  // Age label: for replaced codes show when it was replaced, otherwise when found
+  const ageSrc = (expired && code.replaced_at) ? code.replaced_at : (code.found_at || code.date);
+
   card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
@@ -428,7 +439,7 @@ function buildCard(code){
         ${GAME_NAMES[code.game]||(code.game[0].toUpperCase()+code.game.slice(1))}
         ${newBadge}${expiredBadge}
       </div>
-      <span class="age-badge">${timeAgo(code.found_at||code.date)}</span>
+      <span class="age-badge">${timeAgo(ageSrc)}</span>
     </div>
     <div class="code-row${expired?' expired-row':''}" id="cr-${code.id}">
       <span class="code-text${expired?' expired-text':''}">${code.code}</span>
