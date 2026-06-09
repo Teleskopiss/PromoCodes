@@ -30,6 +30,9 @@
   --pending:#f97316;--pending-dim:rgba(249,115,22,.13);
   --error:#f87171;--error-dim:rgba(248,113,113,.13);
   --shadow:0 3px 12px rgba(0,0,0,.4);
+  /* Dimmed state for used/expired cards */
+  --dim-bg:#141416;--dim-surface:#161618;--dim-border:rgba(255,255,255,.04);
+  --dim-code:#6b6b72;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{-webkit-text-size-adjust:none;}
@@ -55,30 +58,59 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .fetch-btn:active{opacity:.75;transform:scale(.97);}
 .fetch-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .fetch-btn svg{flex-shrink:0;}
+/* Add code button */
+.add-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--radius-full);background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-size:var(--text-xs);font-weight:600;transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.add-btn:active{opacity:.75;transform:scale(.97);}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-backdrop.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:var(--space-4);padding-bottom:calc(var(--space-4) + env(safe-area-inset-bottom));width:100%;max-width:480px;transform:translateY(100%);transition:transform .25s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;gap:var(--space-3);}
+.modal-backdrop.open .modal{transform:translateY(0);}
+.modal-title{font-size:var(--text-base);font-weight:700;}
+.modal-row{display:flex;flex-direction:column;gap:6px;}
+.modal-label{font-size:var(--text-xs);color:var(--text-muted);font-weight:500;}
+.modal-input{background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);font-size:var(--text-base);color:var(--text);font-family:'Courier New',monospace;font-weight:700;letter-spacing:.05em;width:100%;outline:none;}
+.modal-input:focus{border-color:var(--primary);}
+.modal-select{background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--text);width:100%;outline:none;}
+.modal-select:focus{border-color:var(--primary);}
+.modal-actions{display:flex;gap:var(--space-2);}
+.modal-cancel{flex:1;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);background:var(--surface-3);border:1px solid var(--border);color:var(--text-muted);font-size:var(--text-sm);font-weight:600;transition:all var(--transition);}
+.modal-cancel:active{opacity:.75;}
+.modal-save{flex:2;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);background:var(--primary-dim);border:1px solid var(--primary);color:var(--primary);font-size:var(--text-sm);font-weight:700;transition:all var(--transition);}
+.modal-save:active{opacity:.75;transform:scale(.98);}
 .filter-bar{position:sticky;top:calc(40px + env(safe-area-inset-top));z-index:90;background:var(--bg);padding:var(--space-2) 0;border-bottom:1px solid var(--divider);}
 .filter-scroll{display:flex;gap:var(--space-2);padding:0 var(--space-3);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .filter-scroll::-webkit-scrollbar{display:none;}
 .chip{flex-shrink:0;padding:3px var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;cursor:pointer;}
 .chip.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 .main{flex:1;padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);}
+/* Normal card */
 .card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);box-shadow:var(--shadow);}
-.card.used{opacity:.4;}
-.card.expired{border-color:rgba(248,113,113,.3);}
+/* Dimmed card for used AND expired */
+.card.dimmed{background:var(--dim-bg);border-color:var(--dim-border);box-shadow:none;}
 .card.pending-card{border-color:var(--pending);background:var(--surface);}
 .card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);}
 .game-badge{display:flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:600;}
 .game-dot{width:7px;height:7px;border-radius:var(--radius-full);flex-shrink:0;}
 .age-badge{font-size:var(--text-xs);color:var(--text-faint);flex-shrink:0;}
+/* Normal code row */
 .code-row{display:flex;align-items:center;gap:var(--space-2);background:var(--surface-3);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);border:1px solid var(--border);cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;}
 .code-row:active{transform:scale(.97);}
 .code-row.copied{background:var(--success-dim);border-color:var(--success);}
-.code-row.expired-row{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.35);}
+/* Dimmed code row (used or expired) */
+.code-row.dimmed-row{background:var(--dim-surface);border-color:var(--dim-border);}
+/* Expired has a faint red tint over the dim */
+.code-row.expired-row{background:rgba(80,20,20,.35);border-color:rgba(248,113,113,.18);}
 .code-text{flex:1;font-family:'Courier New',monospace;font-size:var(--text-lg);font-weight:700;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.code-text.expired-text{color:var(--error);}
-.card.used .code-text{text-decoration:line-through;color:var(--text-faint);}
+/* Used: dimmer text with strikethrough */
+.card.dimmed .code-row.dimmed-row .code-text{color:var(--dim-code);text-decoration:line-through;}
+/* Expired: slightly whiter than dim-code so it's still readable but clearly expired */
+.code-text.expired-text{color:#8a5050;}
+.card.dimmed .code-row.expired-row .code-text{color:#7a4a4a;}
 .copy-icon{flex-shrink:0;width:32px;height:32px;border-radius:var(--radius-md);background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;transition:all var(--transition);}
-.copy-icon.expired-icon{background:var(--error-dim);color:var(--error);}
+.card.dimmed .copy-icon{background:rgba(255,255,255,.04);color:var(--dim-code);}
+.copy-icon.expired-icon{background:rgba(248,113,113,.07);color:#8a5050;}
 .code-row.copied .copy-icon{background:var(--success-dim);color:var(--success);}
 .pending-row{display:flex;align-items:center;gap:var(--space-2);background:var(--pending-dim);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);border:1px solid var(--pending);}
 .pending-text{flex:1;font-size:var(--text-base);font-weight:600;color:var(--pending);letter-spacing:.03em;}
@@ -115,6 +147,10 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
       <button class="refresh-btn" id="refreshBtn" title="Refresh data">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
+      <button class="add-btn" id="addBtn" title="Add code manually">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add
+      </button>
       <button class="fetch-btn" id="fetchBtn">
         <svg id="fetchIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         <span id="fetchLabel">Get New Info</span>
@@ -135,6 +171,28 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
   </main>
 </div>
 
+<!-- Add Code Modal -->
+<div class="modal-backdrop" id="addModal">
+  <div class="modal">
+    <div class="modal-title">Add Code Manually</div>
+    <div class="modal-row">
+      <label class="modal-label" for="addCodeInput">Promo Code</label>
+      <input class="modal-input" id="addCodeInput" type="text" placeholder="e.g. ra1n" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="modal-row">
+      <label class="modal-label" for="addGameSelect">Game</label>
+      <select class="modal-select" id="addGameSelect">
+        <option value="gaminator">Gaminator</option>
+        <option value="slotpark">Slotpark</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="addCancel">Cancel</button>
+      <button class="modal-save" id="addSave">Add Code</button>
+    </div>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button class="nav-item active" id="navAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>All</button>
   <button class="nav-item" id="navNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New</button>
@@ -150,27 +208,29 @@ const COUNTDOWN    = 60;
 const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
+const MANUAL_KEY   = 'promoRadar_manual';
 
 // Sources where codes expire after 24h
 const EXPIRES_24H_SOURCES = new Set(['coinscrazy.com', 'gaminator.com']);
-// Sources where ONE code is active at a time — expires only when replaced=true
+// Sources where ONE code is active — expires only when replaced=true
 const SINGLE_CODE_SOURCES = new Set(['taplink.cc/gaminator','taplink.cc/slotpark','8bpreward.win']);
-// Sources that should NOT show a clickable source tag on the card
+// Sources that should NOT show a source tag
 const HIDDEN_SOURCE_TAG   = new Set(['coinscrazy.com']);
 
 const SOURCE_MAP = {
-  'tiktok.com':          { url:'https://www.tiktok.com/@slotparkslots',                    label:'TikTok' },
   'taplink.cc/gaminator':{ url:'https://taplink.cc/gaminator3000',                         label:'Gaminator TapLink' },
   'taplink.cc/slotpark': { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
   'gaminator.com':       { url:'https://gaminator.com/en/promotions',                      label:'Gaminator.com' },
   '8bpreward.win':       { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
 };
-// coinscrazy.com intentionally omitted — no source tag shown
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
 function saveUsed(s){ try{ localStorage.setItem(USED_KEY, JSON.stringify([...s])); }catch{} }
+function loadManual(){ try{ return JSON.parse(localStorage.getItem(MANUAL_KEY)||'[]'); }catch{ return []; } }
+function saveManual(a){ try{ localStorage.setItem(MANUAL_KEY, JSON.stringify(a)); }catch{} }
 
 let allCodes=[], usedSet=loadUsed(), activeGame='all', activeTab='all', lastUpdated=null;
+let manualCodes = loadManual();
 
 const mainEl       = document.getElementById('main');
 const filterScroll = document.getElementById('filterScroll');
@@ -180,6 +240,12 @@ const refreshBtn   = document.getElementById('refreshBtn');
 const fetchBtn     = document.getElementById('fetchBtn');
 const fetchIcon    = document.getElementById('fetchIcon');
 const fetchLabel   = document.getElementById('fetchLabel');
+const addBtn       = document.getElementById('addBtn');
+const addModal     = document.getElementById('addModal');
+const addCancel    = document.getElementById('addCancel');
+const addSave      = document.getElementById('addSave');
+const addCodeInput = document.getElementById('addCodeInput');
+const addGameSelect= document.getElementById('addGameSelect');
 
 let toastTimer;
 function showToast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2800); }
@@ -201,6 +267,7 @@ function timeAgo(iso){
 
 function isExpired(e){
   if(e.pending) return false;
+  if(e.manual)  return false; // manual codes never auto-expire
   const src = e.source || '';
   if(EXPIRES_24H_SOURCES.has(src)){
     const age = Date.now() - new Date(e.found_at || e.date).getTime();
@@ -216,6 +283,7 @@ function isNew(e){
   if(e.pending) return true;
   if(isExpired(e)) return false;
   if(usedSet.has(e.id)) return false;
+  if(e.manual) return true;
   const src = e.source || '';
   if(SINGLE_CODE_SOURCES.has(src)) return !e.replaced;
   return (Date.now() - new Date(e.found_at || e.date).getTime()) < 48 * 3600 * 1000;
@@ -230,6 +298,49 @@ function startUpdatedTicker(){
   updatedInterval=setInterval(tick,30000);
 }
 
+function buildAllCodes(data){
+  allCodes=[];
+  // Remote codes
+  ['gaminator','slotpark'].forEach(g=>{
+    (data[g]||[]).forEach(entry=>{
+      allCodes.push({
+        id:          entry.code+'_'+g,
+        game:        g,
+        code:        entry.code,
+        date:        entry.date,
+        source:      entry.source||null,
+        found_at:    entry.found_at||entry.date,
+        pending:     entry.pending||false,
+        collect_url: entry.collect_url||null,
+        replaced:    entry.replaced||false,
+        replaced_at: entry.replaced_at||null,
+        manual:      false,
+      });
+    });
+  });
+  // Manual codes (stored locally)
+  manualCodes.forEach(m=>{
+    allCodes.push({
+      id:       m.id,
+      game:     m.game,
+      code:     m.code,
+      date:     m.added_at,
+      source:   null,
+      found_at: m.added_at,
+      pending:  false,
+      collect_url: null,
+      replaced: false,
+      replaced_at: null,
+      manual:   true,
+    });
+  });
+  allCodes.sort((a,b)=>{
+    if(a.pending && !b.pending) return -1;
+    if(!a.pending && b.pending) return 1;
+    return new Date(b.found_at||b.date) - new Date(a.found_at||a.date);
+  });
+}
+
 async function loadCodes(){
   refreshBtn.classList.add('spinning');
   try{
@@ -237,28 +348,7 @@ async function loadCodes(){
     if(!r.ok) throw new Error(r.status);
     const data=await r.json();
     lastUpdated=data.updated_at||null;
-    allCodes=[];
-    ['gaminator','slotpark'].forEach(g=>{
-      (data[g]||[]).forEach(entry=>{
-        allCodes.push({
-          id:          entry.code+'_'+g,
-          game:        g,
-          code:        entry.code,
-          date:        entry.date,
-          source:      entry.source||null,
-          found_at:    entry.found_at||entry.date,
-          pending:     entry.pending||false,
-          collect_url: entry.collect_url||null,
-          replaced:    entry.replaced||false,
-          replaced_at: entry.replaced_at||null,
-        });
-      });
-    });
-    allCodes.sort((a,b)=>{
-      if(a.pending && !b.pending) return -1;
-      if(!a.pending && b.pending) return 1;
-      return new Date(b.found_at||b.date) - new Date(a.found_at||a.date);
-    });
+    buildAllCodes(data);
   } catch(e){
     console.error('loadCodes:',e);
     if(!allCodes.length) showToast('Could not load codes');
@@ -270,6 +360,37 @@ async function loadCodes(){
 }
 
 refreshBtn.addEventListener('click',()=>{ loadCodes(); showToast('Refreshing...'); });
+
+// ── Add code modal ──────────────────────────────────────────────────────────
+addBtn.addEventListener('click',()=>{
+  addCodeInput.value='';
+  addCodeInput.focus();
+  addModal.classList.add('open');
+});
+function closeModal(){ addModal.classList.remove('open'); }
+addCancel.addEventListener('click', closeModal);
+addModal.addEventListener('click', e=>{ if(e.target===addModal) closeModal(); });
+addSave.addEventListener('click',()=>{
+  const code = addCodeInput.value.trim();
+  if(!code){ showToast('Enter a code first'); return; }
+  const game = addGameSelect.value;
+  const now  = new Date().toISOString();
+  const entry = { id:'manual_'+Date.now(), code, game, added_at: now };
+  manualCodes.unshift(entry);
+  saveManual(manualCodes);
+  // Rebuild allCodes preserving remote data
+  const existingRemote = allCodes.filter(c=>!c.manual);
+  const syntheticData = { gaminator:[], slotpark:[] };
+  existingRemote.forEach(c=>syntheticData[c.game]?.push({
+    code:c.code, date:c.date, source:c.source, found_at:c.found_at,
+    pending:c.pending, collect_url:c.collect_url, replaced:c.replaced, replaced_at:c.replaced_at
+  }));
+  buildAllCodes(syntheticData);
+  buildFilterChips();
+  render();
+  closeModal();
+  showToast('\u2713 Code added');
+});
 
 let countdownTimer=null;
 function startCountdown(){
@@ -297,7 +418,6 @@ fetchBtn.addEventListener('click', async ()=>{
       body:'{}'
     });
     const body=await res.text();
-    console.log('[dispatch] status:',res.status,'body:',body);
     if(res.ok){
       showToast('\u2713 Scraper started \u2014 refreshing in 1 min');
       startCountdown();
@@ -308,7 +428,6 @@ fetchBtn.addEventListener('click', async ()=>{
       fetchIcon.style.animation='';
     }
   } catch(e){
-    console.error('[dispatch] fetch threw:',e);
     showToast('Worker unreachable \u2014 check Cloudflare is deployed');
     fetchBtn.disabled=false;
     fetchLabel.textContent='Get New Info';
@@ -335,13 +454,11 @@ function render(){
   ['skel1','skel2','skel3'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   let codes=[...allCodes];
   if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
-
   if(activeTab==='new'){
     codes=codes.filter(c=>isNew(c));
   } else if(activeTab==='used'){
     codes=codes.filter(c=>!c.pending && usedSet.has(c.id));
   }
-
   mainEl.innerHTML='';
   if(!codes.length){
     const msgs={used:'No used codes yet.',new:'No active codes right now.',all:'No promo codes found.'};
@@ -355,19 +472,15 @@ function buildPendingCard(code){
   const color=GAME_COLORS[code.game]||'#a78bfa';
   const card=document.createElement('div');
   card.className='card pending-card';
-
   const sourceEntry=SOURCE_MAP[code.source];
   const sourceHtml=(sourceEntry && !HIDDEN_SOURCE_TAG.has(code.source))
     ? `<a class="source-tag" href="${sourceEntry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${sourceEntry.label}</a>`
     : '';
-
   const collectHtml=code.collect_url
     ? `<a class="collect-btn" href="${code.collect_url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Collect</a>`
     : '';
-
   const slotMatch=code.code.match(/_([\d]+)$/);
   const slotNum=slotMatch?slotMatch[1]:'';
-
   card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
@@ -385,7 +498,6 @@ function buildPendingCard(code){
       ${collectHtml}
     </div>
     ${sourceHtml?`<div>${sourceHtml}</div>`:''}`;
-
   return card;
 }
 
@@ -396,34 +508,45 @@ function buildCard(code){
   const color   = GAME_COLORS[code.game]||'#a78bfa';
   const card    = document.createElement('div');
 
+  // Both used AND expired get the 'dimmed' class for the darker card background
   let cardClass = 'card';
-  if(used)    cardClass += ' used';
-  if(expired) cardClass += ' expired';
+  if(used || expired) cardClass += ' dimmed';
   card.className = cardClass;
 
-  // Only show source tag for sources that have a mapping AND aren't hidden
   const entry = SOURCE_MAP[code.source];
-  const showTag = entry && !HIDDEN_SOURCE_TAG.has(code.source);
+  const showTag = entry && !HIDDEN_SOURCE_TAG.has(code.source) && !code.manual;
   const sourceHtml = showTag
     ? `<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${entry.label}</a>`
     : '';
 
-  const expiredBadge = expired ? '<span style="font-size:var(--text-xs);color:var(--error);font-weight:700;margin-left:4px">EXPIRED</span>' : '';
+  const manualBadge  = code.manual  ? '<span style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;margin-left:4px">MANUAL</span>' : '';
+  const expiredBadge = expired ? '<span style="font-size:var(--text-xs);color:#8a5050;font-weight:700;margin-left:4px">EXPIRED</span>' : '';
   const newBadge     = _new && !used && !expired ? '<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>' : '';
   const ageSrc       = (expired && code.replaced_at) ? code.replaced_at : (code.found_at || code.date);
+
+  // Code row classes
+  let codeRowClass = 'code-row';
+  if(used)    codeRowClass += ' dimmed-row';
+  if(expired) codeRowClass += ' expired-row';
+
+  // Code text class
+  const codeTextClass = expired ? 'code-text expired-text' : 'code-text';
+
+  // Copy icon class
+  const copyIconClass = expired ? 'copy-icon expired-icon' : 'copy-icon';
 
   card.innerHTML=`
     <div class="card-header">
       <div class="game-badge">
         <span class="game-dot" style="background:${color}"></span>
         ${GAME_NAMES[code.game]||(code.game[0].toUpperCase()+code.game.slice(1))}
-        ${newBadge}${expiredBadge}
+        ${newBadge}${expiredBadge}${manualBadge}
       </div>
       <span class="age-badge">${timeAgo(ageSrc)}</span>
     </div>
-    <div class="code-row${expired?' expired-row':''}" id="cr-${code.id}">
-      <span class="code-text${expired?' expired-text':''}">${code.code}</span>
-      <span class="copy-icon${expired?' expired-icon':''}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+    <div class="${codeRowClass}" id="cr-${code.id}">
+      <span class="${codeTextClass}">${code.code}</span>
+      <span class="${copyIconClass}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
     </div>
     ${sourceHtml?`<div>${sourceHtml}</div>`:''}`;
 
