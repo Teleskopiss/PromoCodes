@@ -30,7 +30,6 @@
   --pending:#f97316;--pending-dim:rgba(249,115,22,.13);
   --error:#f87171;--error-dim:rgba(248,113,113,.13);
   --shadow:0 3px 12px rgba(0,0,0,.4);
-  /* Dimmed state for used/expired cards */
   --dim-bg:#141416;--dim-surface:#161618;--dim-border:rgba(255,255,255,.04);
   --dim-code:#6b6b72;
 }
@@ -58,10 +57,24 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .fetch-btn:active{opacity:.75;transform:scale(.97);}
 .fetch-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .fetch-btn svg{flex-shrink:0;}
-/* Add code button */
-.add-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--radius-full);background:var(--success-dim);border:1px solid var(--success);color:var(--success);font-size:var(--text-xs);font-weight:600;transition:all var(--transition);white-space:nowrap;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
-.add-btn:active{opacity:.75;transform:scale(.97);}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* FAB add button */
+.fab{
+  position:fixed;
+  right:var(--space-4);
+  bottom:calc(var(--nav-h) + var(--space-3));
+  z-index:150;
+  width:40px;height:40px;
+  border-radius:var(--radius-full);
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  transition:all var(--transition);
+  -webkit-tap-highlight-color:transparent;
+}
+.fab:active{transform:scale(.93);background:var(--surface-3);}
 /* Modal */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
 .modal-backdrop.open{opacity:1;pointer-events:all;}
@@ -87,12 +100,19 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .main{flex:1;padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);}
 /* Normal card */
 .card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-2);box-shadow:var(--shadow);}
-/* Dimmed card for used AND expired */
+/* Dimmed card — expired AND used */
 .card.dimmed{background:var(--dim-bg);border-color:var(--dim-border);box-shadow:none;}
 .card.pending-card{border-color:var(--pending);background:var(--surface);}
 .card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);}
 .game-badge{display:flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:600;}
+/* Game badge text — faded only when expired+used (card.dimmed) */
+.card.dimmed .game-badge{color:var(--text-faint);}
+/* Used-only: slightly faded but not as dark */
+.card.used-only .game-badge{color:#4a4a52;}
 .game-dot{width:7px;height:7px;border-radius:var(--radius-full);flex-shrink:0;}
+/* Dot also fades when dimmed */
+.card.dimmed .game-dot{opacity:.3;}
+.card.used-only .game-dot{opacity:.45;}
 .age-badge{font-size:var(--text-xs);color:var(--text-faint);flex-shrink:0;}
 /* Normal code row */
 .code-row{display:flex;align-items:center;gap:var(--space-2);background:var(--surface-3);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);border:1px solid var(--border);cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;}
@@ -147,10 +167,6 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
       <button class="refresh-btn" id="refreshBtn" title="Refresh data">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
-      <button class="add-btn" id="addBtn" title="Add code manually">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add
-      </button>
       <button class="fetch-btn" id="fetchBtn">
         <svg id="fetchIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         <span id="fetchLabel">Get New Info</span>
@@ -170,6 +186,11 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
     <div class="skel-card" id="skel3"><div class="skel-line skeleton" style="width:35%"></div><div class="skel-code skeleton"></div><div class="skel-tags"><div class="skel-tag skeleton"></div></div></div>
   </main>
 </div>
+
+<!-- FAB add button -->
+<button class="fab" id="addBtn" title="Add code manually" aria-label="Add code manually">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
 
 <!-- Add Code Modal -->
 <div class="modal-backdrop" id="addModal">
@@ -210,11 +231,8 @@ const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 const MANUAL_KEY   = 'promoRadar_manual';
 
-// Sources where codes expire after 24h
 const EXPIRES_24H_SOURCES = new Set(['coinscrazy.com', 'gaminator.com']);
-// Sources where ONE code is active — expires only when replaced=true
 const SINGLE_CODE_SOURCES = new Set(['taplink.cc/gaminator','taplink.cc/slotpark','8bpreward.win']);
-// Sources that should NOT show a source tag
 const HIDDEN_SOURCE_TAG   = new Set(['coinscrazy.com']);
 
 const SOURCE_MAP = {
@@ -267,7 +285,7 @@ function timeAgo(iso){
 
 function isExpired(e){
   if(e.pending) return false;
-  if(e.manual)  return false; // manual codes never auto-expire
+  if(e.manual)  return false;
   const src = e.source || '';
   if(EXPIRES_24H_SOURCES.has(src)){
     const age = Date.now() - new Date(e.found_at || e.date).getTime();
@@ -286,7 +304,7 @@ function isNew(e){
   if(e.manual) return true;
   const src = e.source || '';
   if(SINGLE_CODE_SOURCES.has(src)) return !e.replaced;
-  return (Date.now() - new Date(e.found_at || e.date).getTime()) < 48 * 3600 * 1000;
+  return (Date.now() - new Date(e.found_at || e.date+'T12:00:00Z').getTime()) < 48 * 3600 * 1000;
 }
 
 let updatedInterval=null;
@@ -300,7 +318,6 @@ function startUpdatedTicker(){
 
 function buildAllCodes(data){
   allCodes=[];
-  // Remote codes
   ['gaminator','slotpark'].forEach(g=>{
     (data[g]||[]).forEach(entry=>{
       allCodes.push({
@@ -318,7 +335,6 @@ function buildAllCodes(data){
       });
     });
   });
-  // Manual codes (stored locally)
   manualCodes.forEach(m=>{
     allCodes.push({
       id:       m.id,
@@ -364,220 +380,180 @@ refreshBtn.addEventListener('click',()=>{ loadCodes(); showToast('Refreshing...'
 // ── Add code modal ──────────────────────────────────────────────────────────
 addBtn.addEventListener('click',()=>{
   addCodeInput.value='';
-  addCodeInput.focus();
   addModal.classList.add('open');
+  setTimeout(()=>addCodeInput.focus(),300);
 });
-function closeModal(){ addModal.classList.remove('open'); }
-addCancel.addEventListener('click', closeModal);
-addModal.addEventListener('click', e=>{ if(e.target===addModal) closeModal(); });
+addCancel.addEventListener('click',()=>addModal.classList.remove('open'));
+addModal.addEventListener('click',e=>{ if(e.target===addModal) addModal.classList.remove('open'); });
+
 addSave.addEventListener('click',()=>{
-  const code = addCodeInput.value.trim();
-  if(!code){ showToast('Enter a code first'); return; }
-  const game = addGameSelect.value;
-  const now  = new Date().toISOString();
-  const entry = { id:'manual_'+Date.now(), code, game, added_at: now };
-  manualCodes.unshift(entry);
+  const code=addCodeInput.value.trim();
+  if(!code){ showToast('Enter a code'); return; }
+  const game=addGameSelect.value;
+  const entry={ id:'manual_'+Date.now(), game, code, added_at:new Date().toISOString() };
+  manualCodes.push(entry);
   saveManual(manualCodes);
-  // Rebuild allCodes preserving remote data
-  const existingRemote = allCodes.filter(c=>!c.manual);
-  const syntheticData = { gaminator:[], slotpark:[] };
-  existingRemote.forEach(c=>syntheticData[c.game]?.push({
-    code:c.code, date:c.date, source:c.source, found_at:c.found_at,
-    pending:c.pending, collect_url:c.collect_url, replaced:c.replaced, replaced_at:c.replaced_at
-  }));
-  buildAllCodes(syntheticData);
-  buildFilterChips();
+  addModal.classList.remove('open');
+  buildAllCodes({ gaminator: allCodes.filter(c=>c.game==='gaminator'&&!c.manual), slotpark: allCodes.filter(c=>c.game==='slotpark'&&!c.manual) });
   render();
-  closeModal();
-  showToast('\u2713 Code added');
+  showToast('Code added!');
 });
 
-let countdownTimer=null;
-function startCountdown(){
-  clearInterval(countdownTimer);
-  fetchBtn.disabled=true;
-  let secs=COUNTDOWN;
-  function tick(){
-    if(secs<=0){ clearInterval(countdownTimer); loadCodes(); fetchBtn.disabled=false; fetchLabel.textContent='Get New Info'; fetchIcon.style.animation=''; return; }
-    const m=Math.floor(secs/60),s=secs%60;
-    fetchLabel.textContent=`${m}:${String(s).padStart(2,'0')}`;
-    secs--;
-  }
-  tick();
-  countdownTimer=setInterval(tick,1000);
-}
-
-fetchBtn.addEventListener('click', async ()=>{
-  fetchIcon.style.animation='spin .7s linear infinite';
-  fetchLabel.textContent='Starting...';
-  fetchBtn.disabled=true;
-  try{
-    const res=await fetch(DISPATCH_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:'{}'
-    });
-    const body=await res.text();
-    if(res.ok){
-      showToast('\u2713 Scraper started \u2014 refreshing in 1 min');
-      startCountdown();
-    } else {
-      showToast('Error '+res.status+': '+body.slice(0,80));
-      fetchBtn.disabled=false;
-      fetchLabel.textContent='Get New Info';
-      fetchIcon.style.animation='';
-    }
-  } catch(e){
-    showToast('Worker unreachable \u2014 check Cloudflare is deployed');
-    fetchBtn.disabled=false;
-    fetchLabel.textContent='Get New Info';
-    fetchIcon.style.animation='';
-  }
-});
-
+// ── Filter chips ────────────────────────────────────────────────────────────
 function buildFilterChips(){
-  [...filterScroll.querySelectorAll('[data-filter]:not([data-filter="all"])')].forEach(e=>e.remove());
-  [...new Set(allCodes.map(c=>c.game))].forEach(g=>{
+  const games=[...new Set(allCodes.map(c=>c.game))];
+  filterScroll.innerHTML='';
+  const allChip=document.createElement('button');
+  allChip.className='chip'+(activeGame==='all'?' active':'');
+  allChip.dataset.filter='all';
+  allChip.textContent='All games';
+  allChip.addEventListener('click',()=>{ activeGame='all'; buildFilterChips(); render(); });
+  filterScroll.appendChild(allChip);
+  games.forEach(g=>{
     const btn=document.createElement('button');
     btn.className='chip'+(activeGame===g?' active':'');
     btn.dataset.filter=g;
-    btn.textContent=GAME_NAMES[g]||(g[0].toUpperCase()+g.slice(1));
-    btn.addEventListener('click',()=>{activeGame=g;updateChips();render();});
+    btn.textContent=GAME_NAMES[g]||g;
+    btn.addEventListener('click',()=>{ activeGame=g; buildFilterChips(); render(); });
     filterScroll.appendChild(btn);
   });
 }
-function updateChips(){
-  filterScroll.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===activeGame));
-}
 
+// ── Render ──────────────────────────────────────────────────────────────────
 function render(){
-  ['skel1','skel2','skel3'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
-  let codes=[...allCodes];
-  if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
-  if(activeTab==='new'){
-    codes=codes.filter(c=>isNew(c));
-  } else if(activeTab==='used'){
-    codes=codes.filter(c=>!c.pending && usedSet.has(c.id));
-  }
+  ['skel1','skel2','skel3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+
+  let visible=allCodes.filter(c=> activeGame==='all' || c.game===activeGame );
+  if(activeTab==='new')  visible=visible.filter(c=>isNew(c));
+  if(activeTab==='used') visible=visible.filter(c=>usedSet.has(c.id)&&!c.pending);
+
   mainEl.innerHTML='';
-  if(!codes.length){
-    const msgs={used:'No used codes yet.',new:'No active codes right now.',all:'No promo codes found.'};
-    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${msgs[activeTab]||msgs.all}</p></div>`;
+  if(!visible.length){
+    mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127922;</div><h3>${activeTab==='used'?'No used codes yet':activeTab==='new'?'No new codes':'No codes yet'}</h3><p>${activeTab==='used'?'Codes you copy will appear here':'Check back soon for new promo codes'}</p></div>`;
     return;
   }
-  codes.forEach(code=>mainEl.appendChild(code.pending?buildPendingCard(code):buildCard(code)));
-}
 
-function buildPendingCard(code){
-  const color=GAME_COLORS[code.game]||'#a78bfa';
-  const card=document.createElement('div');
-  card.className='card pending-card';
-  const sourceEntry=SOURCE_MAP[code.source];
-  const sourceHtml=(sourceEntry && !HIDDEN_SOURCE_TAG.has(code.source))
-    ? `<a class="source-tag" href="${sourceEntry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${sourceEntry.label}</a>`
-    : '';
-  const collectHtml=code.collect_url
-    ? `<a class="collect-btn" href="${code.collect_url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Collect</a>`
-    : '';
-  const slotMatch=code.code.match(/_([\d]+)$/);
-  const slotNum=slotMatch?slotMatch[1]:'';
-  card.innerHTML=`
-    <div class="card-header">
+  visible.forEach(entry=>{
+    const expired   = isExpired(entry);
+    const used      = usedSet.has(entry.id);
+    // Dimmed only if BOTH expired AND used
+    const bothDim   = expired && used;
+    // Used-only state (used but not expired)
+    const usedOnly  = used && !expired;
+
+    const card=document.createElement('div');
+    card.className='card'+(entry.pending?' pending-card':'')+(bothDim?' dimmed':usedOnly?' used-only':'');
+
+    const color = GAME_COLORS[entry.game]||'#6c8cff';
+    const dotStyle = bothDim ? 'background:#2a2a2e' : usedOnly ? `background:${color};opacity:.45` : `background:${color}`;
+
+    const header=document.createElement('div');
+    header.className='card-header';
+    header.innerHTML=`
       <div class="game-badge">
-        <span class="game-dot" style="background:${color}"></span>
-        ${GAME_NAMES[code.game]||(code.game[0].toUpperCase()+code.game.slice(1))}
-        <span style="font-size:var(--text-xs);color:var(--pending);font-weight:700;margin-left:4px">PENDING</span>
+        <span class="game-dot" style="${dotStyle}"></span>
+        ${GAME_NAMES[entry.game]||entry.game}
       </div>
-      <span class="age-badge">${timeAgo(code.found_at||code.date)}</span>
-    </div>
-    <div class="pending-row">
-      <div style="flex:1">
-        <div class="pending-text">&#9200; Code incoming${slotNum?' #'+slotNum:''}</div>
-        <div class="pending-label">Spotted on 8bpreward.win \u2014 not yet published</div>
-      </div>
-      ${collectHtml}
-    </div>
-    ${sourceHtml?`<div>${sourceHtml}</div>`:''}`;
-  return card;
-}
+      <span class="age-badge">${timeAgo(entry.found_at||entry.date)}</span>`;
+    card.appendChild(header);
 
-function buildCard(code){
-  const used    = usedSet.has(code.id);
-  const expired = isExpired(code);
-  const _new    = isNew(code);
-  const color   = GAME_COLORS[code.game]||'#a78bfa';
-  const card    = document.createElement('div');
+    if(entry.pending){
+      const row=document.createElement('div');
+      row.className='pending-row';
+      row.innerHTML=`
+        <div><div class="pending-text">Pending code</div><div class="pending-label">${entry.date||''}</div></div>
+        ${entry.collect_url?`<a class="collect-btn" href="${entry.collect_url}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Collect</a>`:'<span class="pending-label">Soon</span>'}
+      `;
+      card.appendChild(row);
+    } else {
+      const rowClass = 'code-row'+(bothDim||usedOnly?' dimmed-row':'')+(expired?' expired-row':'');
+      const codeClass= 'code-text'+(expired?' expired-text':'');
+      const iconClass= 'copy-icon'+(expired?' expired-icon':'');
+      const row=document.createElement('div');
+      row.className=rowClass;
+      row.dataset.id=entry.id;
+      row.innerHTML=`
+        <span class="${codeClass}">${entry.code}</span>
+        <span class="${iconClass}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>`;
+      row.addEventListener('click',()=>{
+        navigator.clipboard.writeText(entry.code).catch(()=>{});
+        usedSet.add(entry.id); saveUsed(usedSet);
+        row.classList.add('copied');
+        setTimeout(()=>row.classList.remove('copied'),1200);
+        showToast('Copied: '+entry.code);
+        render();
+      });
+      card.appendChild(row);
+    }
 
-  // Both used AND expired get the 'dimmed' class for the darker card background
-  let cardClass = 'card';
-  if(used || expired) cardClass += ' dimmed';
-  card.className = cardClass;
+    const src=entry.source;
+    if(src && !HIDDEN_SOURCE_TAG.has(src) && SOURCE_MAP[src]){
+      const sm=SOURCE_MAP[src];
+      const tag=document.createElement('div');
+      tag.innerHTML=`<a class="source-tag" href="${sm.url}" target="_blank" rel="noopener"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${sm.label}</a>`;
+      card.appendChild(tag);
+    }
 
-  const entry = SOURCE_MAP[code.source];
-  const showTag = entry && !HIDDEN_SOURCE_TAG.has(code.source) && !code.manual;
-  const sourceHtml = showTag
-    ? `<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${entry.label}</a>`
-    : '';
-
-  const manualBadge  = code.manual  ? '<span style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;margin-left:4px">MANUAL</span>' : '';
-  const expiredBadge = expired ? '<span style="font-size:var(--text-xs);color:#8a5050;font-weight:700;margin-left:4px">EXPIRED</span>' : '';
-  const newBadge     = _new && !used && !expired ? '<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>' : '';
-  const ageSrc       = (expired && code.replaced_at) ? code.replaced_at : (code.found_at || code.date);
-
-  // Code row classes
-  let codeRowClass = 'code-row';
-  if(used)    codeRowClass += ' dimmed-row';
-  if(expired) codeRowClass += ' expired-row';
-
-  // Code text class
-  const codeTextClass = expired ? 'code-text expired-text' : 'code-text';
-
-  // Copy icon class
-  const copyIconClass = expired ? 'copy-icon expired-icon' : 'copy-icon';
-
-  card.innerHTML=`
-    <div class="card-header">
-      <div class="game-badge">
-        <span class="game-dot" style="background:${color}"></span>
-        ${GAME_NAMES[code.game]||(code.game[0].toUpperCase()+code.game.slice(1))}
-        ${newBadge}${expiredBadge}${manualBadge}
-      </div>
-      <span class="age-badge">${timeAgo(ageSrc)}</span>
-    </div>
-    <div class="${codeRowClass}" id="cr-${code.id}">
-      <span class="${codeTextClass}">${code.code}</span>
-      <span class="${copyIconClass}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
-    </div>
-    ${sourceHtml?`<div>${sourceHtml}</div>`:''}`;
-
-  card.querySelector('.code-row').addEventListener('click',()=>{
-    navigator.clipboard.writeText(code.code).then(()=>{
-      const row=card.querySelector('.code-row');
-      row.classList.add('copied');
-      row.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
-      showToast('Copied!');
-      setTimeout(()=>{
-        row.classList.remove('copied');
-        row.querySelector('.copy-icon').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-      },1400);
-      if(!usedSet.has(code.id)){ usedSet.add(code.id); saveUsed(usedSet); setTimeout(()=>render(),1600); }
-    }).catch(()=>showToast('Long-press to copy'));
+    mainEl.appendChild(card);
   });
-  return card;
 }
 
+// ── Bottom nav ──────────────────────────────────────────────────────────────
 function setTab(t){
   activeTab=t;
   ['navAll','navNew','navUsed'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  document.getElementById({all:'navAll',new:'navNew',used:'navUsed'}[t])?.classList.add('active');
+  const map={all:'navAll',new:'navNew',used:'navUsed'};
+  document.getElementById(map[t]).classList.add('active');
   render();
 }
 document.getElementById('navAll').addEventListener('click',()=>setTab('all'));
 document.getElementById('navNew').addEventListener('click',()=>setTab('new'));
 document.getElementById('navUsed').addEventListener('click',()=>setTab('used'));
-filterScroll.querySelector('[data-filter="all"]').addEventListener('click',()=>{activeGame='all';updateChips();render();});
 
-setInterval(loadCodes,20*60*1000);
+// ── Fetch / dispatch ────────────────────────────────────────────────────────
+let countdown=0, countTimer=null;
+function startCountdown(){
+  fetchBtn.disabled=true;
+  countdown=COUNTDOWN;
+  function tick(){
+    fetchLabel.textContent=`Wait ${countdown}s`;
+    countdown--;
+    if(countdown<0){
+      clearInterval(countTimer);
+      fetchBtn.disabled=false;
+      fetchLabel.textContent='Get New Info';
+      fetchIcon.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+    }
+  }
+  tick();
+  countTimer=setInterval(tick,1000);
+}
+
+fetchBtn.addEventListener('click',async()=>{
+  if(fetchBtn.disabled) return;
+  fetchIcon.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+  fetchLabel.textContent='Triggering...';
+  fetchBtn.disabled=true;
+  try{
+    const r=await fetch(DISPATCH_URL,{method:'POST'});
+    if(r.ok){
+      showToast('Scraping started! Check back in ~30s');
+      startCountdown();
+      setTimeout(()=>loadCodes(),32000);
+    } else {
+      showToast('Trigger failed ('+r.status+')');
+      fetchBtn.disabled=false;
+      fetchLabel.textContent='Get New Info';
+    }
+  } catch(e){
+    showToast('Network error');
+    fetchBtn.disabled=false;
+    fetchLabel.textContent='Get New Info';
+  }
+});
+
 loadCodes();
 </script>
 </body>

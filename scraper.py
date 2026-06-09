@@ -2,7 +2,6 @@ import json
 import re
 import os
 from datetime import datetime, timezone
-from html import unescape
 from bs4 import BeautifulSoup
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -64,131 +63,6 @@ def fetch_html(url: str, timeout: int = 15) -> str | None:
         return None
 
 
-def fetch_rendered_html(url: str) -> str | None:
-    """
-    Uses Playwright headless Chromium to fully render a JS-heavy page.
-    Only used for 8bpreward.win whose active code is JS-injected.
-    Falls back to plain requests if Playwright is unavailable.
-    """
-    try:
-        from playwright.sync_api import sync_playwright
-        print(f"  [playwright] rendering {url}")
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
-                user_agent=HEADERS["User-Agent"],
-                extra_http_headers={"Accept-Language": "en-US,en;q=0.5"}
-            )
-            page.goto(url, wait_until="networkidle", timeout=30000)
-            # Wait up to 5s for the game-announce div to appear
-            try:
-                page.wait_for_selector("div.game-announce", timeout=5000)
-                print("  [playwright] div.game-announce found in DOM")
-            except Exception:
-                print("  [playwright] div.game-announce did not appear — using page as-is")
-            html = page.content()
-            browser.close()
-            print(f"  [playwright] done, got {len(html)} chars")
-            return unescape(html)
-    except ImportError:
-        print("  [playwright] not installed — falling back to requests")
-        return fetch_html(url)
-    except Exception as e:
-        print(f"  [playwright] error: {e} — falling back to requests")
-        return fetch_html(url)
-
-
-# Words that are never promo codes
-_BLACKLIST = {
-    "THIS", "THE", "AND", "FOR", "ARE", "NOT", "YOU", "CAN",
-    "ALL", "ANY", "USE", "NEW", "GET", "OUR", "HAS", "ITS",
-    "WITH", "FROM", "THAT", "HAVE", "WILL", "THEY", "BEEN",
-    "WERE", "ALSO", "INTO", "YOUR", "THEIR", "WHAT", "WHEN",
-    "CODE", "BONUS", "CODES", "LINK", "GAME", "GAMES", "PLAY",
-    "SAVE", "PAGE", "SITE", "DAILY", "FREE", "COINS", "CHIP",
-    "CHIPS", "SPIN", "SPINS", "ENTER", "CLICK", "OPEN", "HERE",
-    "MORE", "EACH", "SOME", "THAN", "THEN", "ONLY", "JUST",
-    "LIKE", "KNOW", "MAKE", "TAKE", "GIVE", "FIND", "SHOW",
-    "NEED", "WANT", "HELP", "WORK", "USED", "COME", "SOON",
-    "BUTTON", "BELOW", "ABOVE", "TODAY", "NIGHT", "NOON",
-    "WAIT", "BACK", "NEXT", "PREV", "LAST", "FIRST", "DONE",
-    "ACTIVE", "VALID", "CHECK", "SHARE", "COPY", "PASTE",
-    "CLAIM", "GRAB", "VIEW", "INFO", "DATA", "TEXT", "TYPE",
-    "STEP", "NOTE", "READ", "SEND", "SIGN", "JOIN", "CALL",
-    "VISIT", "ENJOY", "EARN", "REDEEM", "APPLY", "PRESS",
-    "PROMO", "REWARD", "GIFTS", "GIFT", "TRUE", "FALSE",
-    "NULL", "UNDEFINED", "HTML", "HTTP", "HTTPS", "HREF",
-    "SPAN", "CLASS", "STYLE", "WIDTH", "COLOR", "TITLE",
-}
-
-
-def _looks_like_code(token: str) -> bool:
-    if token.upper() in _BLACKLIST:
-        return False
-    if not re.search(r"[A-Za-z]", token):
-        return False
-    if len(token) < 2 or len(token) > 15:
-        return False
-    return True
-
-
-def extract_bonus_code_from_rendered(soup: BeautifulSoup) -> str | None:
-    """
-    Extracts the active bonus code from the fully-rendered page.
-    Checks div.game-announce first, then any element containing BONUS CODE,
-    then falls back to a full-page scan.
-    """
-    target_divs = []
-
-    announce = soup.find("div", class_="game-announce")
-    if announce:
-        target_divs.append(announce)
-        print("  [8bpreward] div.game-announce found")
-    else:
-        print("  [8bpreward] div.game-announce NOT found")
-
-    # Also grab any element mentioning BONUS CODE
-    for tag in soup.find_all(["div", "span", "p", "h1", "h2", "h3", "strong", "b"]):
-        text = tag.get_text(" ", strip=True)
-        if re.search(r"BONUS\s+CODE", text, re.IGNORECASE) and tag not in target_divs:
-            target_divs.append(tag)
-
-    for div in target_divs:
-        text = div.get_text(" ", strip=True)
-        print(f"  [8bpreward] scanning: {text[:120]!r}")
-        for m in re.finditer(
-            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})",
-            text, re.IGNORECASE
-        ):
-            token = m.group(1).strip()
-            if _looks_like_code(token):
-                print(f"  [8bpreward] code found (element scan): {token!r}")
-                return token
-            print(f"  [8bpreward] skipping: {token!r}")
-
-        # Tail fallback
-        after_code = re.split(r"(?:BONUS\s+)?CODE\s*[:\-]?", text, flags=re.IGNORECASE)
-        if len(after_code) > 1:
-            for token in re.findall(r"[A-Za-z0-9]{2,15}", after_code[-1]):
-                if _looks_like_code(token):
-                    print(f"  [8bpreward] code found (tail): {token!r}")
-                    return token
-
-    # Full-page scan as last resort
-    full_text = soup.get_text(" ", strip=True)
-    for m in re.finditer(
-        r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})",
-        full_text, re.IGNORECASE
-    ):
-        token = m.group(1).strip()
-        if _looks_like_code(token):
-            print(f"  [8bpreward] code found (full-page): {token!r}")
-            return token
-
-    print("  [8bpreward] no code found")
-    return None
-
-
 def parse_date_ordinal(text: str) -> str | None:
     clean = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", text, flags=re.IGNORECASE).strip()
     for fmt in ("%d %B %Y", "%d %b %Y", "%B %d %Y"):
@@ -210,8 +84,8 @@ def parse_date_plain(text: str) -> str | None:
 
 
 def scrape_8bpreward() -> tuple[list, dict]:
-    print("[8bpreward] fetching with Playwright (JS rendering)...")
-    html = fetch_rendered_html(EIGHT_BP_REWARD["url"])
+    print("[8bpreward] fetching...")
+    html = fetch_html(EIGHT_BP_REWARD["url"])
     if not html:
         print("[8bpreward] could not fetch page")
         return [], {}
@@ -220,8 +94,14 @@ def scrape_8bpreward() -> tuple[list, dict]:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     results = []
 
-    code = extract_bonus_code_from_rendered(soup)
-    if code:
+    # Static HTML code extraction
+    full_text = soup.get_text(" ", strip=True)
+    code_match = re.search(
+        r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})",
+        full_text, re.IGNORECASE
+    )
+    if code_match:
+        code = code_match.group(1).strip()
         print(f"[8bpreward] active code: {code}")
         results.append({
             "code": code,
@@ -230,7 +110,7 @@ def scrape_8bpreward() -> tuple[list, dict]:
             "pending": False
         })
     else:
-        print("[8bpreward] no active code found")
+        print("[8bpreward] no active code found in static HTML")
 
     # COLLECT links grouped by date
     date_pattern = re.compile(
@@ -508,18 +388,17 @@ def main():
     data = load_existing()
     data = repair_single_code_sources(data)
 
-    # All non-Playwright scrapes run in parallel; 8bpreward runs separately
-    # (Playwright is not thread-safe with sync_playwright across threads)
-    results_fast = {}
     tasks = {
         "csz_gaminator":     lambda: scrape_coinscrazy("gaminator"),
         "csz_slotpark":      lambda: scrape_coinscrazy("slotpark"),
         "taplink_gaminator": lambda: scrape_taplink_gaminator(),
         "taplink_slotpark":  lambda: scrape_taplink_slotpark(),
         "gaminator_site":    lambda: scrape_gaminator_site(),
+        "8bpreward":         lambda: scrape_8bpreward(),
     }
 
-    with ThreadPoolExecutor(max_workers=5) as ex:
+    results_fast = {}
+    with ThreadPoolExecutor(max_workers=6) as ex:
         futures = {ex.submit(fn): name for name, fn in tasks.items()}
         for fut in as_completed(futures):
             name = futures[fut]
@@ -527,11 +406,9 @@ def main():
                 results_fast[name] = fut.result()
             except Exception as e:
                 print(f"  [parallel] {name} raised: {e}")
-                results_fast[name] = ([], {}) if name == "csz_gaminator" or name == "csz_slotpark" else []
+                results_fast[name] = ([], {}) if name in ("csz_gaminator", "csz_slotpark", "8bpreward") else []
 
-    # 8bpreward runs in the main thread (Playwright)
-    bp_entries, bp_date_counts = scrape_8bpreward()
-
+    bp_entries, bp_date_counts = results_fast.get("8bpreward", ([], {}))
     csz_gaminator, csz_gam_date_counts = results_fast.get("csz_gaminator", ([], {}))
     csz_slotpark,  _                   = results_fast.get("csz_slotpark",  ([], {}))
     tap_gam                            = results_fast.get("taplink_gaminator", [])
