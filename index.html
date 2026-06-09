@@ -87,6 +87,10 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .modal-input:focus{border-color:var(--primary);}
 .modal-select{background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--text);width:100%;outline:none;}
 .modal-select:focus{border-color:var(--primary);}
+/* Expiry pill row */
+.expiry-pills{display:flex;gap:var(--space-2);flex-wrap:wrap;}
+.expiry-pill{padding:4px 12px;border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;border:1px solid var(--border);background:var(--surface-3);color:var(--text-muted);cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;}
+.expiry-pill.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);}
 .modal-actions{display:flex;gap:var(--space-2);}
 .modal-cancel{flex:1;padding:var(--space-2) var(--space-3);border-radius:var(--radius-lg);background:var(--surface-3);border:1px solid var(--border);color:var(--text-muted);font-size:var(--text-sm);font-weight:600;transition:all var(--transition);}
 .modal-cancel:active{opacity:.75;}
@@ -107,10 +111,9 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 .game-badge{display:flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:600;}
 /* Game badge text — faded only when expired+used (card.dimmed) */
 .card.dimmed .game-badge{color:var(--text-faint);}
-/* Used-only: slightly faded but not as dark */
+/* Used-only: slightly faded */
 .card.used-only .game-badge{color:#4a4a52;}
 .game-dot{width:7px;height:7px;border-radius:var(--radius-full);flex-shrink:0;}
-/* Dot also fades when dimmed */
 .card.dimmed .game-dot{opacity:.3;}
 .card.used-only .game-dot{opacity:.45;}
 .age-badge{font-size:var(--text-xs);color:var(--text-faint);flex-shrink:0;}
@@ -123,14 +126,16 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 /* Expired has a faint red tint over the dim */
 .code-row.expired-row{background:rgba(80,20,20,.35);border-color:rgba(248,113,113,.18);}
 .code-text{flex:1;font-family:'Courier New',monospace;font-size:var(--text-lg);font-weight:700;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-/* Used: dimmer text with strikethrough */
-.card.dimmed .code-row.dimmed-row .code-text{color:var(--dim-code);text-decoration:line-through;}
-/* Expired: slightly whiter than dim-code so it's still readable but clearly expired */
+/* Used (any state): strikethrough + dim text — mirrors expired+used look */
+.code-row.dimmed-row .code-text{color:var(--dim-code);text-decoration:line-through;}
+/* Expired-only (not used): reddish tint, no strikethrough */
 .code-text.expired-text{color:#8a5050;}
-.card.dimmed .code-row.expired-row .code-text{color:#7a4a4a;}
+/* Expired + used: inherit strikethrough from dimmed-row, darker red */
+.code-row.expired-row.dimmed-row .code-text{color:#7a4a4a;}
 .copy-icon{flex-shrink:0;width:32px;height:32px;border-radius:var(--radius-md);background:var(--primary-dim);color:var(--primary);display:flex;align-items:center;justify-content:center;transition:all var(--transition);}
 .card.dimmed .copy-icon{background:rgba(255,255,255,.04);color:var(--dim-code);}
 .copy-icon.expired-icon{background:rgba(248,113,113,.07);color:#8a5050;}
+.code-row.dimmed-row .copy-icon{background:rgba(255,255,255,.04);color:var(--dim-code);}
 .code-row.copied .copy-icon{background:var(--success-dim);color:var(--success);}
 .pending-row{display:flex;align-items:center;gap:var(--space-2);background:var(--pending-dim);border-radius:var(--radius-lg);padding:var(--space-2) var(--space-3);border:1px solid var(--pending);}
 .pending-text{flex:1;font-size:var(--text-base);font-weight:600;color:var(--pending);letter-spacing:.03em;}
@@ -207,6 +212,16 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
         <option value="slotpark">Slotpark</option>
       </select>
     </div>
+    <div class="modal-row">
+      <label class="modal-label">Expires in</label>
+      <div class="expiry-pills" id="expiryPills">
+        <button class="expiry-pill" data-hours="12">12h</button>
+        <button class="expiry-pill active" data-hours="24">24h</button>
+        <button class="expiry-pill" data-hours="168">7 days</button>
+        <button class="expiry-pill" data-hours="336">14 days</button>
+        <button class="expiry-pill" data-hours="0">Never</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" id="addCancel">Cancel</button>
       <button class="modal-save" id="addSave">Add Code</button>
@@ -264,6 +279,17 @@ const addCancel    = document.getElementById('addCancel');
 const addSave      = document.getElementById('addSave');
 const addCodeInput = document.getElementById('addCodeInput');
 const addGameSelect= document.getElementById('addGameSelect');
+const expiryPills  = document.getElementById('expiryPills');
+
+// ── Expiry pill selection ────────────────────────────────────────────────────
+let selectedExpiryHours = 24; // default 24h
+expiryPills.addEventListener('click', e => {
+  const pill = e.target.closest('.expiry-pill');
+  if (!pill) return;
+  expiryPills.querySelectorAll('.expiry-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  selectedExpiryHours = parseInt(pill.dataset.hours, 10);
+});
 
 let toastTimer;
 function showToast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2800); }
@@ -285,7 +311,11 @@ function timeAgo(iso){
 
 function isExpired(e){
   if(e.pending) return false;
-  if(e.manual)  return false;
+  // Manual codes: check expiry_at if set
+  if(e.manual){
+    if(e.expiry_at) return Date.now() > new Date(e.expiry_at).getTime();
+    return false; // no expiry = never expires
+  }
   const src = e.source || '';
   if(EXPIRES_24H_SOURCES.has(src)){
     const age = Date.now() - new Date(e.found_at || e.date).getTime();
@@ -332,22 +362,24 @@ function buildAllCodes(data){
         replaced:    entry.replaced||false,
         replaced_at: entry.replaced_at||null,
         manual:      false,
+        expiry_at:   null,
       });
     });
   });
   manualCodes.forEach(m=>{
     allCodes.push({
-      id:       m.id,
-      game:     m.game,
-      code:     m.code,
-      date:     m.added_at,
-      source:   null,
-      found_at: m.added_at,
-      pending:  false,
-      collect_url: null,
-      replaced: false,
-      replaced_at: null,
-      manual:   true,
+      id:         m.id,
+      game:       m.game,
+      code:       m.code,
+      date:       m.added_at,
+      source:     null,
+      found_at:   m.added_at,
+      pending:    false,
+      collect_url:null,
+      replaced:   false,
+      replaced_at:null,
+      manual:     true,
+      expiry_at:  m.expiry_at || null,
     });
   });
   allCodes.sort((a,b)=>{
@@ -380,6 +412,10 @@ refreshBtn.addEventListener('click',()=>{ loadCodes(); showToast('Refreshing...'
 // ── Add code modal ──────────────────────────────────────────────────────────
 addBtn.addEventListener('click',()=>{
   addCodeInput.value='';
+  // Reset expiry pill to 24h default
+  expiryPills.querySelectorAll('.expiry-pill').forEach(p => p.classList.remove('active'));
+  expiryPills.querySelector('[data-hours="24"]').classList.add('active');
+  selectedExpiryHours = 24;
   addModal.classList.add('open');
   setTimeout(()=>addCodeInput.focus(),300);
 });
@@ -390,7 +426,11 @@ addSave.addEventListener('click',()=>{
   const code=addCodeInput.value.trim();
   if(!code){ showToast('Enter a code'); return; }
   const game=addGameSelect.value;
-  const entry={ id:'manual_'+Date.now(), game, code, added_at:new Date().toISOString() };
+  const now = new Date();
+  const expiry_at = selectedExpiryHours > 0
+    ? new Date(now.getTime() + selectedExpiryHours * 3600 * 1000).toISOString()
+    : null;
+  const entry={ id:'manual_'+Date.now(), game, code, added_at:now.toISOString(), expiry_at };
   manualCodes.push(entry);
   saveManual(manualCodes);
   addModal.classList.remove('open');
@@ -466,9 +506,12 @@ function render(){
       `;
       card.appendChild(row);
     } else {
-      const rowClass = 'code-row'+(bothDim||usedOnly?' dimmed-row':'')+(expired?' expired-row':'');
-      const codeClass= 'code-text'+(expired?' expired-text':'');
-      const iconClass= 'copy-icon'+(expired?' expired-icon':'');
+      // A code row is "dimmed-row" if used (regardless of expiry) OR if expired
+      const isDimRow = used || expired;
+      const rowClass = 'code-row'+(isDimRow?' dimmed-row':'')+(expired?' expired-row':'');
+      // expired-text only on expired codes that are NOT used (used already gets line-through via dimmed-row)
+      const codeClass= 'code-text'+(expired && !used?' expired-text':'');
+      const iconClass= 'copy-icon'+(expired && !used?' expired-icon':'');
       const row=document.createElement('div');
       row.className=rowClass;
       row.dataset.id=entry.id;
