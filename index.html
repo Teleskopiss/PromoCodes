@@ -245,6 +245,7 @@ const GAME_COLORS  = { gaminator:'#6c8cff', slotpark:'#fb923c' };
 const GAME_NAMES   = { gaminator:'Gaminator', slotpark:'Slotpark' };
 const USED_KEY     = 'promoRadar_used';
 const MANUAL_KEY   = 'promoRadar_manual';
+const DISPATCH_TIMEOUT_MS = 8000;
 
 const EXPIRES_24H_SOURCES = new Set(['coinscrazy.com', 'gaminator.com']);
 const SINGLE_CODE_SOURCES = new Set(['taplink.cc/gaminator','taplink.cc/slotpark','8bpreward.win']);
@@ -556,6 +557,12 @@ document.getElementById('navNew').addEventListener('click',()=>setTab('new'));
 document.getElementById('navUsed').addEventListener('click',()=>setTab('used'));
 
 // ── Fetch / dispatch ────────────────────────────────────────────────────────
+function resetFetchBtn(){
+  fetchBtn.disabled=false;
+  fetchLabel.textContent='Get New Info';
+  fetchIcon.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+}
+
 let countdown=0, countTimer=null;
 function startCountdown(){
   fetchBtn.disabled=true;
@@ -565,9 +572,7 @@ function startCountdown(){
     countdown--;
     if(countdown<0){
       clearInterval(countTimer);
-      fetchBtn.disabled=false;
-      fetchLabel.textContent='Get New Info';
-      fetchIcon.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+      resetFetchBtn();
     }
   }
   tick();
@@ -576,24 +581,32 @@ function startCountdown(){
 
 fetchBtn.addEventListener('click',async()=>{
   if(fetchBtn.disabled) return;
-  fetchIcon.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
   fetchLabel.textContent='Triggering...';
   fetchBtn.disabled=true;
+
+  // Abort controller so the request never hangs forever
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(()=>controller.abort(), DISPATCH_TIMEOUT_MS);
+
   try{
-    const r=await fetch(DISPATCH_URL,{method:'POST'});
+    const r = await fetch(DISPATCH_URL, { method:'POST', signal: controller.signal });
+    clearTimeout(timeoutId);
     if(r.ok){
       showToast('Scraping started! Check back in ~30s');
       startCountdown();
-      setTimeout(()=>loadCodes(),32000);
+      setTimeout(()=>loadCodes(), 32000);
     } else {
       showToast('Trigger failed ('+r.status+')');
-      fetchBtn.disabled=false;
-      fetchLabel.textContent='Get New Info';
+      resetFetchBtn();
     }
   } catch(e){
-    showToast('Network error');
-    fetchBtn.disabled=false;
-    fetchLabel.textContent='Get New Info';
+    clearTimeout(timeoutId);
+    if(e.name === 'AbortError'){
+      showToast('Request timed out — try again');
+    } else {
+      showToast('Network error');
+    }
+    resetFetchBtn();
   }
 });
 
