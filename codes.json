@@ -40,12 +40,16 @@
       "code": "this",
       "date": "2026-06-05",
       "source": "8bpreward.win",
+      "replaced": true,
+      "replaced_at": "2026-06-09T02:30:00.000000+00:00",
       "found_at": "2026-06-05T17:03:31.566271+00:00"
     },
     {
       "code": "nb6sa",
       "date": "2026-06-05",
       "source": "taplink.cc/gaminator",
+      "replaced": true,
+      "replaced_at": "2026-06-09T02:30:00.000000+00:00",
       "found_at": "2026-06-05T17:03:31.566271+00:00"
     },
     {
@@ -76,6 +80,8 @@
       "source": "taplink.cc/gaminator",
       "pending": false,
       "collect_url": null,
+      "replaced": true,
+      "replaced_at": "2026-06-09T02:30:00.000000+00:00",
       "found_at": "2026-06-08T11:28:55.006422+00:00"
     },
     {
@@ -122,6 +128,8 @@
       "code": "nb4k",
       "date": "2026-06-05",
       "source": "taplink.cc/slotpark",
+      "replaced": true,
+      "replaced_at": "2026-06-09T02:30:00.000000+00:00",
       "found_at": "2026-06-05T14:55:01.530957+00:00"
     },
     {
@@ -153,5 +161,5 @@
       "found_at": "2026-06-08T11:28:55.956590+00:00"
     }
   ],
-  "updated_at": "2026-06-09T01:29:33.721418+00:00"
+  "updated_at": "2026-06-09T02:30:00.000000+00:00"
 }

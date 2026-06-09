@@ -155,15 +155,17 @@ const USED_KEY     = 'promoRadar_used';
 const EXPIRES_24H_SOURCES = new Set(['coinscrazy.com', 'gaminator.com']);
 // Sources where ONE code is active at a time — expires only when replaced=true
 const SINGLE_CODE_SOURCES = new Set(['taplink.cc/gaminator','taplink.cc/slotpark','8bpreward.win']);
+// Sources that should NOT show a clickable source tag on the card
+const HIDDEN_SOURCE_TAG   = new Set(['coinscrazy.com']);
 
 const SOURCE_MAP = {
   'tiktok.com':          { url:'https://www.tiktok.com/@slotparkslots',                    label:'TikTok' },
   'taplink.cc/gaminator':{ url:'https://taplink.cc/gaminator3000',                         label:'Gaminator TapLink' },
   'taplink.cc/slotpark': { url:'https://taplink.cc/slotpark',                              label:'Slotpark TapLink' },
-  'gaminator.com':       { url:'https://gaminator.com/en/promotions',                      label:'Gaminator' },
+  'gaminator.com':       { url:'https://gaminator.com/en/promotions',                      label:'Gaminator.com' },
   '8bpreward.win':       { url:'https://www.8bpreward.win/2025/11/gaminator-codes.html',   label:'8bpreward.win' },
-  'coinscrazy.com':      { url:'https://coinscrazy.com/gaminator-free-coins/',             label:'CoinsCrazy' },
 };
+// coinscrazy.com intentionally omitted — no source tag shown
 
 function loadUsed(){ try{ return new Set(JSON.parse(localStorage.getItem(USED_KEY)||'[]')); }catch{ return new Set(); } }
 function saveUsed(s){ try{ localStorage.setItem(USED_KEY, JSON.stringify([...s])); }catch{} }
@@ -197,11 +199,6 @@ function timeAgo(iso){
   return `${dt.getDate()} ${dt.toLocaleString('en',{month:'short'})}`;
 }
 
-/**
- * Determine if a code entry is expired.
- * - coinscrazy / gaminator.com: expired after 24h from found_at
- * - taplink / 8bpreward: expired only when scraper sets replaced=true
- */
 function isExpired(e){
   if(e.pending) return false;
   const src = e.source || '';
@@ -215,21 +212,12 @@ function isExpired(e){
   return false;
 }
 
-/**
- * A code shows in the "New" tab if:
- * - It is NOT expired
- * - AND it is not used
- * - Pending codes always show in New
- * - For single-code sources (taplink/8bpreward): show if not replaced
- * - For coinscrazy: show if found within last 48h
- */
 function isNew(e){
   if(e.pending) return true;
   if(isExpired(e)) return false;
   if(usedSet.has(e.id)) return false;
   const src = e.source || '';
   if(SINGLE_CODE_SOURCES.has(src)) return !e.replaced;
-  // coinscrazy / gaminator.com: new if found within 48h and not yet expired (24h)
   return (Date.now() - new Date(e.found_at || e.date).getTime()) < 48 * 3600 * 1000;
 }
 
@@ -266,7 +254,6 @@ async function loadCodes(){
         });
       });
     });
-    // Sort: pending first, then by found_at descending
     allCodes.sort((a,b)=>{
       if(a.pending && !b.pending) return -1;
       if(!a.pending && b.pending) return 1;
@@ -350,21 +337,14 @@ function render(){
   if(activeGame!=='all') codes=codes.filter(c=>c.game===activeGame);
 
   if(activeTab==='new'){
-    // New: active non-expired codes + pending
     codes=codes.filter(c=>isNew(c));
   } else if(activeTab==='used'){
-    // Used: codes the user has tapped (excludes pending)
     codes=codes.filter(c=>!c.pending && usedSet.has(c.id));
   }
-  // All: everything — expired shown in red, pending as pending card
 
   mainEl.innerHTML='';
   if(!codes.length){
-    const msgs = {
-      used: 'No used codes yet.',
-      new:  'No active codes right now.',
-      all:  'No promo codes found.'
-    };
+    const msgs={used:'No used codes yet.',new:'No active codes right now.',all:'No promo codes found.'};
     mainEl.innerHTML=`<div class="empty"><div class="empty-icon">&#127967;</div><h3>No codes here</h3><p>${msgs[activeTab]||msgs.all}</p></div>`;
     return;
   }
@@ -377,7 +357,7 @@ function buildPendingCard(code){
   card.className='card pending-card';
 
   const sourceEntry=SOURCE_MAP[code.source];
-  const sourceHtml=sourceEntry
+  const sourceHtml=(sourceEntry && !HIDDEN_SOURCE_TAG.has(code.source))
     ? `<a class="source-tag" href="${sourceEntry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${sourceEntry.label}</a>`
     : '';
 
@@ -400,7 +380,7 @@ function buildPendingCard(code){
     <div class="pending-row">
       <div style="flex:1">
         <div class="pending-text">&#9200; Code incoming${slotNum?' #'+slotNum:''}</div>
-        <div class="pending-label">Code spotted on 8bpreward.win \u2014 not yet published elsewhere</div>
+        <div class="pending-label">Spotted on 8bpreward.win \u2014 not yet published</div>
       </div>
       ${collectHtml}
     </div>
@@ -421,16 +401,16 @@ function buildCard(code){
   if(expired) cardClass += ' expired';
   card.className = cardClass;
 
-  const entry=SOURCE_MAP[code.source];
-  const sourceHtml=entry
+  // Only show source tag for sources that have a mapping AND aren't hidden
+  const entry = SOURCE_MAP[code.source];
+  const showTag = entry && !HIDDEN_SOURCE_TAG.has(code.source);
+  const sourceHtml = showTag
     ? `<a class="source-tag" href="${entry.url}" target="_blank" rel="noopener noreferrer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${entry.label}</a>`
     : '';
 
   const expiredBadge = expired ? '<span style="font-size:var(--text-xs);color:var(--error);font-weight:700;margin-left:4px">EXPIRED</span>' : '';
   const newBadge     = _new && !used && !expired ? '<span style="font-size:var(--text-xs);color:var(--success);font-weight:700;margin-left:4px">NEW</span>' : '';
-
-  // Age label: for replaced codes show when it was replaced, otherwise when found
-  const ageSrc = (expired && code.replaced_at) ? code.replaced_at : (code.found_at || code.date);
+  const ageSrc       = (expired && code.replaced_at) ? code.replaced_at : (code.found_at || code.date);
 
   card.innerHTML=`
     <div class="card-header">

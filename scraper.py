@@ -40,7 +40,8 @@ TAPLINK_SLOTPARK = {
 }
 
 # Sources that have exactly ONE active code at a time.
-# When a new code is found from these, the old one is replaced (not kept as extra).
+# When a new code is found from these, ALL previous codes from that source
+# are marked replaced=True.
 SINGLE_CODE_SOURCES = {
     "8bpreward.win",
     "taplink.cc/gaminator",
@@ -105,6 +106,7 @@ def parse_date_plain(text: str) -> str | None:
     return None
 
 
+# Words that are never promo codes
 _BLACKLIST = {
     "THIS", "THE", "AND", "FOR", "ARE", "NOT", "YOU", "CAN",
     "ALL", "ANY", "USE", "NEW", "GET", "OUR", "HAS", "ITS",
@@ -116,89 +118,122 @@ _BLACKLIST = {
     "MORE", "EACH", "SOME", "THAN", "THEN", "ONLY", "JUST",
     "LIKE", "KNOW", "MAKE", "TAKE", "GIVE", "FIND", "SHOW",
     "NEED", "WANT", "HELP", "WORK", "USED", "COME", "SOON",
+    "BUTTON", "BELOW", "ABOVE", "TODAY", "NIGHT", "NOON",
+    "WAIT", "BACK", "NEXT", "PREV", "LAST", "FIRST", "DONE",
+    "ACTIVE", "VALID", "CHECK", "SHARE", "COPY", "PASTE",
+    "CLAIM", "GRAB", "VIEW", "INFO", "DATA", "TEXT", "TYPE",
+    "STEP", "NOTE", "READ", "SEND", "SIGN", "JOIN", "CALL",
+    "VISIT", "ENJOY", "EARN", "REDEEM", "APPLY", "PRESS",
+    "BONUS", "PROMO", "REWARD", "GIFTS", "GIFT",
 }
+
+
+def _looks_like_code(token: str) -> bool:
+    """
+    Returns True if the token could plausibly be a promo code:
+    - 2-15 chars, alphanumeric
+    - Not pure digits (codes always have at least one letter)
+    - Not blacklisted
+    - Has at least one letter
+    """
+    if token.upper() in _BLACKLIST:
+        return False
+    if not re.search(r"[A-Za-z]", token):  # must have at least one letter
+        return False
+    if len(token) < 2 or len(token) > 15:
+        return False
+    return True
 
 
 def extract_bonus_code_from_game_announce(soup: BeautifulSoup) -> str | None:
     """
-    The active bonus code lives inside <div class="game-announce"> as plain text.
-    Several possible formats:
-        BONUS CODE: ra1n
-        BONUS CODE ra1n
-        CODE: ra1n
-        CODE ra1n
-        BONUS CODE:ra1n  (no space after colon)
+    Extracts the active bonus code from <div class="game-announce">.
 
-    We also try extracting the LAST short alphanumeric token in the div
-    as a broad fallback, in case the colon/formatting varies.
+    The site writes things like:
+        "BONUS CODE: ra1n"
+        "BONUS CODE ra1n"
+        "Bonus Code:ra1n"
+        "This page's BONUS CODE: ra1n"
+
+    Strategy:
+    1. Find the text of div.game-announce.
+    2. Look for the pattern: BONUS CODE (optional sep) <token>
+       BUT skip if the matched token is blacklisted — then keep scanning
+       forward for the next token.
+    3. Fallback: scan all tokens in the div for one that looks like a code.
     """
     announce = soup.find("div", class_="game-announce")
+    target_divs = []
     if announce:
-        text = announce.get_text(" ", strip=True)
-        print(f"  [8bpreward] game-announce text: {text!r}")
+        target_divs.append(announce)
+        print(f"  [8bpreward] div.game-announce found")
+    else:
+        print("  [8bpreward] div.game-announce NOT found — trying fallback divs")
 
-        # Primary: BONUS CODE (optional colon/dash/space) followed by token
-        m = re.search(
-            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})\b",
+    # Also check divs whose class contains 'announce' or 'bonus'
+    for div in soup.find_all("div", class_=re.compile(r"announce|bonus", re.IGNORECASE)):
+        if div not in target_divs:
+            target_divs.append(div)
+
+    for div in target_divs:
+        text = div.get_text(" ", strip=True)
+        print(f"  [8bpreward] scanning div text: {text!r}")
+
+        # Find all occurrences of BONUS CODE (or just CODE) followed by a token
+        # We iterate all matches so we can skip blacklisted ones
+        for m in re.finditer(
+            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})",
             text, re.IGNORECASE
-        )
-        if m:
-            code = m.group(1).strip()
-            if code.upper() not in _BLACKLIST:
-                print(f"  [8bpreward] game-announce code (primary): {code}")
-                return code
-            print(f"  [8bpreward] primary match '{code}' is blacklisted, trying last-token fallback")
+        ):
+            token = m.group(1).strip()
+            if _looks_like_code(token):
+                print(f"  [8bpreward] code found (pattern match): {token!r}")
+                return token
+            else:
+                print(f"  [8bpreward] skipping blacklisted/invalid token: {token!r}")
 
-        # Fallback: grab every word-like token, take the last short alphanumeric one
-        # that looks like a real code (mixed alpha+digit or all alpha, 2-15 chars)
+        # Fallback: scan all alphanumeric tokens in the div
+        # Use the text after the last occurrence of 'CODE' or 'BONUS'
+        after_code = re.split(r"(?:BONUS\s+)?CODE\s*[:\-]?", text, flags=re.IGNORECASE)
+        if len(after_code) > 1:
+            # Take the part right after the last 'CODE' keyword
+            tail = after_code[-1].strip()
+            tokens = re.findall(r"[A-Za-z0-9]{2,15}", tail)
+            for token in tokens:
+                if _looks_like_code(token):
+                    print(f"  [8bpreward] code found (tail scan): {token!r}")
+                    return token
+
+        # Last resort: any token in the whole div that looks like a code
+        # (avoids returning navigation words like 'home', 'click' etc)
         tokens = re.findall(r"[A-Za-z0-9]{2,15}", text)
-        for token in reversed(tokens):
-            if token.upper() not in _BLACKLIST and re.search(r"[A-Za-z]", token):
-                print(f"  [8bpreward] game-announce code (last-token fallback): {token}")
+        for token in reversed(tokens):  # reversed = take the last meaningful word
+            if _looks_like_code(token):
+                print(f"  [8bpreward] code found (last-token fallback): {token!r}")
                 return token
 
-        print(f"  [8bpreward] game-announce found but no code extracted from: {text!r}")
-    else:
-        print("  [8bpreward] div.game-announce NOT found — checking fallback divs")
-
-    # Fallback: any div with class containing 'announce' or 'bonus'
-    for div in soup.find_all("div", class_=re.compile(r"announce|bonus", re.IGNORECASE)):
-        text = div.get_text(" ", strip=True)
-        m = re.search(
-            r"(?:BONUS\s+)?CODE\s*[:\-]?\s*([A-Za-z0-9]{2,15})\b",
-            text, re.IGNORECASE
-        )
-        if m:
-            code = m.group(1).strip()
-            if code.upper() not in _BLACKLIST:
-                print(f"  [8bpreward] fallback div code: {code}")
-                return code
-
+    print("  [8bpreward] no code found in any announce/bonus div")
     return None
 
 
-def scrape_8bpreward() -> list:
+def scrape_8bpreward() -> tuple[list, dict]:
     """
-    Scrapes https://www.8bpreward.win/2025/11/gaminator-codes.html
-
-    1. ACTUAL CODE — from <div class="game-announce"> which contains:
-           BONUS CODE: ra1n
-       This is where the site always stores the current active bonus code.
-       Only ONE code at a time from this source.
-
-    2. PENDING entries — one per active COLLECT link (gam.to URLs).
+    Returns (entries, date_to_link_count) where:
+    - entries: list of code/pending dicts
+    - date_to_link_count: {date_str: int} count of COLLECT links per date
+      (used to compare against coinscrazy to decide if pending entries are needed)
     """
     print("[8bpreward] fetching...")
     html = fetch_html(EIGHT_BP_REWARD["url"])
     if not html:
         print("[8bpreward] could not fetch page")
-        return []
+        return [], {}
 
     soup = BeautifulSoup(html, "html.parser")
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     results = []
 
-    # --- 1. Extract the active bonus code from div.game-announce ---
+    # --- 1. Extract the active bonus code ---
     code = extract_bonus_code_from_game_announce(soup)
     if code:
         print(f"[8bpreward] active code: {code}")
@@ -242,6 +277,9 @@ def scrape_8bpreward() -> list:
         link_date = find_date_for_link(link) or today
         date_to_links.setdefault(link_date, []).append(link)
 
+    # Build count map for comparison with coinscrazy
+    date_to_link_count = {d: len(ls) for d, ls in date_to_links.items()}
+
     real_code_dates = {r["date"] for r in results if not r.get("pending")}
 
     pending_keys = set()
@@ -266,7 +304,7 @@ def scrape_8bpreward() -> list:
     real = [r for r in results if not r.get("pending")]
     pend = [r for r in results if r.get("pending")]
     print(f"[8bpreward] done: {len(real)} real, {len(pend)} pending")
-    return results
+    return results, date_to_link_count
 
 
 def extract_codes(raw: str, label: str) -> list:
@@ -305,24 +343,30 @@ def existing_codes(entries: list) -> set:
     return {e["code"].upper() for e in entries}
 
 
-def scrape_coinscrazy(game: str) -> list:
+def scrape_coinscrazy(game: str) -> tuple[list, dict]:
+    """
+    Returns (entries, date_to_code_count) where:
+    - entries: list of code dicts
+    - date_to_code_count: {date_str: int} count of codes found per date
+    """
     src = SOURCES[game]
     try:
         resp = requests.get(src["url"], headers=HEADERS, timeout=25)
         resp.raise_for_status()
     except Exception as e:
         print(f"[{game}] coinscrazy fetch error: {e}")
-        return []
+        return [], {}
 
     soup = BeautifulSoup(resp.text, "html.parser")
     content = soup.find("article") or soup.find("div", class_=re.compile("entry|post|content")) or soup.body
     if not content:
         print(f"[{game}] no content container found")
-        return []
+        return [], {}
 
     results = []
     current_date = None
     seen = set()
+    date_to_code_count: dict[str, int] = {}
 
     for tag in content.find_all(True):
         text = tag.get_text(" ", strip=True)
@@ -341,9 +385,11 @@ def scrape_coinscrazy(game: str) -> list:
             if code.upper() not in seen:
                 seen.add(code.upper())
                 results.append({"code": code, "date": current_date, "source": src["label"], "pending": False})
+                if current_date:
+                    date_to_code_count[current_date] = date_to_code_count.get(current_date, 0) + 1
 
     print(f"[{game}] coinscrazy: {len(results)} codes, sample: {[r['code'] for r in results[:3]]}")
-    return results
+    return results, date_to_code_count
 
 
 def scrape_gaminator_site() -> list:
@@ -373,9 +419,8 @@ def scrape_taplink_gaminator() -> list:
     if not raw:
         print("[taplink-gaminator] could not fetch page")
         return []
-    # Only return the FIRST code found — taplink has one active code at a time
     all_codes = extract_codes(raw, TAPLINK_GAMINATOR["label"])
-    result = all_codes[:1]
+    result = all_codes[:1]  # Only the first/most prominent code
     print(f"[taplink-gaminator] active code: {[r['code'] for r in result]}")
     return result
 
@@ -386,33 +431,52 @@ def scrape_taplink_slotpark() -> list:
     if not raw:
         print("[taplink-slotpark] could not fetch page")
         return []
-    # Only return the FIRST code found — taplink has one active code at a time
     all_codes = extract_codes(raw, TAPLINK_SLOTPARK["label"])
-    result = all_codes[:1]
+    result = all_codes[:1]  # Only the first/most prominent code
     print(f"[taplink-slotpark] active code: {[r['code'] for r in result]}")
     return result
+
+
+def build_extra_pendings(date_to_8bp_count: dict, date_to_csz_count: dict,
+                         existing_codes_set: set) -> list:
+    """
+    If 8bpreward has MORE collect links for a date than coinscrazy has codes,
+    the difference represents codes that haven't been published on coinscrazy yet.
+    Add a pending entry for each missing slot.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    extras = []
+    for date, bp_count in date_to_8bp_count.items():
+        csz_count = date_to_csz_count.get(date, 0)
+        diff = bp_count - csz_count
+        if diff > 0:
+            print(f"  [pending-compare] {date}: 8bpreward={bp_count}, coinscrazy={csz_count}, extra pending={diff}")
+            for i in range(diff):
+                slot_num = i + 1
+                key = f"XPENDING_{date}_{slot_num}"
+                if key.upper() not in existing_codes_set:
+                    extras.append({
+                        "code": key,
+                        "date": date,
+                        "source": "8bpreward.win",
+                        "pending": True,
+                        "collect_url": None
+                    })
+    return extras
 
 
 def merge(existing: list, new_entries: list) -> tuple:
     """
     Merges new scraped entries into the existing list.
 
-    Rules:
-    - SINGLE_CODE_SOURCES (taplink, 8bpreward): only ONE active code per source.
-      When a new code arrives from such a source, the old one is marked
-      expired (replaced=True) rather than kept active.
-    - coinscrazy.com: multiple codes allowed; each expires after 24h (handled frontend).
-    - Pending entries are removed when a real code exists for the same date.
+    Single-code source rules (taplink.cc/gaminator, taplink.cc/slotpark, 8bpreward.win):
+    - Only ONE non-replaced, non-pending code allowed per source at a time.
+    - When a new code arrives, ALL previous active codes from that source
+      are marked replaced=True, replaced_at=now.
+    - Pending entries for a date are removed once a real code for that date exists.
     """
     now = datetime.now(timezone.utc).isoformat()
     added = 0
-
-    # Build lookup: source -> current active code entry (for single-code sources)
-    active_by_source: dict[str, dict] = {}
-    for entry in existing:
-        src = entry.get("source", "")
-        if src in SINGLE_CODE_SOURCES and not entry.get("pending") and not entry.get("replaced"):
-            active_by_source[src] = entry
 
     known_codes = existing_codes(existing)
 
@@ -426,23 +490,26 @@ def merge(existing: list, new_entries: list) -> tuple:
         src = entry.get("source", "")
 
         if entry.get("pending"):
+            # Don't add pending if a real code for same date already exists
             if entry.get("date") in real_dates:
                 continue
             if code_key in known_codes:
                 continue
         else:
             if code_key in known_codes:
-                # Already known — just skip (found_at stays as original discovery time)
+                # Already known — skip
                 continue
 
-            # For single-code sources: mark old code as replaced
-            if src in SINGLE_CODE_SOURCES and src in active_by_source:
-                old = active_by_source[src]
-                if old["code"].upper() != code_key:
-                    print(f"  [merge] {src}: replacing '{old['code']}' with '{entry['code']}'")
-                    old["replaced"] = True
-                    old["replaced_at"] = now
-                    del active_by_source[src]
+            # Single-code source: mark ALL previous active codes from this source as replaced
+            if src in SINGLE_CODE_SOURCES:
+                for old in existing:
+                    if (old.get("source") == src
+                            and not old.get("pending")
+                            and not old.get("replaced")
+                            and old["code"].upper() != code_key):
+                        print(f"  [merge] {src}: marking '{old['code']}' as replaced by '{entry['code']}'")
+                        old["replaced"] = True
+                        old["replaced_at"] = now
 
         existing.append({
             "code":        entry["code"],
@@ -453,8 +520,6 @@ def merge(existing: list, new_entries: list) -> tuple:
             "found_at":    now
         })
         known_codes.add(code_key)
-        if src in SINGLE_CODE_SOURCES and not entry.get("pending"):
-            active_by_source[src] = existing[-1]
         added += 1
 
     # Remove pending entries superseded by real codes
@@ -470,24 +535,61 @@ def merge(existing: list, new_entries: list) -> tuple:
     return existing, added
 
 
+def repair_single_code_sources(data: dict) -> dict:
+    """
+    One-time repair: ensure each SINGLE_CODE_SOURCE has at most one
+    non-replaced, non-pending code per game. Mark all but the most
+    recent (by found_at) as replaced.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    for game in ("gaminator", "slotpark"):
+        for src in SINGLE_CODE_SOURCES:
+            actives = [
+                e for e in data[game]
+                if e.get("source") == src
+                and not e.get("pending")
+                and not e.get("replaced")
+            ]
+            if len(actives) > 1:
+                # Sort by found_at ascending; all but last get replaced
+                actives.sort(key=lambda e: e.get("found_at") or e.get("date") or "")
+                for old in actives[:-1]:
+                    print(f"  [repair] {game}/{src}: marking old code '{old['code']}' as replaced")
+                    old["replaced"] = True
+                    old["replaced_at"] = now
+    return data
+
+
 def main():
     data = load_existing()
+
+    # Repair any existing data where multiple codes from same single-code source are active
+    data = repair_single_code_sources(data)
+
     total_added = 0
 
-    gaminator_new = (
-        scrape_coinscrazy("gaminator")
-        + scrape_gaminator_site()
-        + scrape_8bpreward()
-        + scrape_taplink_gaminator()
-    )
+    # Scrape gaminator sources
+    csz_gaminator, csz_gam_date_counts = scrape_coinscrazy("gaminator")
+    bp_entries, bp_date_counts = scrape_8bpreward()
+    tap_gam = scrape_taplink_gaminator()
+    gam_site = scrape_gaminator_site()
+
+    # Extra pending entries: 8bpreward has more links than coinscrazy has codes
+    existing_set = existing_codes(data["gaminator"])
+    extra_pendings = build_extra_pendings(bp_date_counts, csz_gam_date_counts, existing_set)
+    if extra_pendings:
+        print(f"  [pending-compare] adding {len(extra_pendings)} extra pending(s)")
+
+    gaminator_new = csz_gaminator + gam_site + bp_entries + tap_gam + extra_pendings
     data["gaminator"], added = merge(data["gaminator"], gaminator_new)
     total_added += added
     print(f"[gaminator] +{added} (total: {len(data['gaminator'])})")
 
-    slotpark_new = (
-        scrape_coinscrazy("slotpark")
-        + scrape_taplink_slotpark()
-    )
+    # Scrape slotpark sources
+    csz_slotpark, _ = scrape_coinscrazy("slotpark")
+    tap_slp = scrape_taplink_slotpark()
+
+    slotpark_new = csz_slotpark + tap_slp
     data["slotpark"], added = merge(data["slotpark"], slotpark_new)
     total_added += added
     print(f"[slotpark] +{added} (total: {len(data['slotpark'])})")
