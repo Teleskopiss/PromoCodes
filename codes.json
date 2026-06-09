@@ -159,7 +159,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-08T11:28:55.956590+00:00"
+    },
+    {
+      "code": "bn3c",
+      "date": "2026-06-09",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-09T08:59:29.863779+00:00"
     }
   ],
-  "updated_at": "2026-06-09T05:50:18.862116+00:00"
+  "updated_at": "2026-06-09T08:59:29.863803+00:00"
 }
