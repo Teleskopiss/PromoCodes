@@ -107,6 +107,22 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-10T10:33:37.507708+00:00"
+    },
+    {
+      "code": "nb4ds",
+      "date": "2026-06-12",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-12T09:05:53.091748+00:00"
+    },
+    {
+      "code": "xc4f",
+      "date": "2026-06-12",
+      "source": "taplink.cc/gaminator",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-12T09:05:53.091748+00:00"
     }
   ],
   "slotpark": [
@@ -200,8 +216,18 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-06-09T14:03:05.678659+00:00"
+      "found_at": "2026-06-09T14:03:05.678659+00:00",
+      "replaced": true,
+      "replaced_at": "2026-06-12T09:05:53.091800+00:00"
+    },
+    {
+      "code": "v3vz",
+      "date": "2026-06-12",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-12T09:05:53.091800+00:00"
     }
   ],
-  "updated_at": "2026-06-12T07:15:55.729020+00:00"
+  "updated_at": "2026-06-12T09:05:53.091831+00:00"
 }
