@@ -173,6 +173,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-15T18:20:42.526858+00:00"
+    },
+    {
+      "code": "bvc2",
+      "date": "2026-06-16",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-16T12:45:14.969592+00:00"
     }
   ],
   "slotpark": [
@@ -287,5 +295,5 @@
       "found_at": "2026-06-15T07:40:19.295724+00:00"
     }
   ],
-  "updated_at": "2026-06-16T07:44:16.270542+00:00"
+  "updated_at": "2026-06-16T12:45:14.969639+00:00"
 }
