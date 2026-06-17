@@ -293,7 +293,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-15T07:40:19.295724+00:00"
+    },
+    {
+      "code": "cv6b",
+      "date": "2026-06-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-17T10:07:19.146752+00:00"
     }
   ],
-  "updated_at": "2026-06-17T07:44:59.777333+00:00"
+  "updated_at": "2026-06-17T10:07:19.146779+00:00"
 }
