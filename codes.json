@@ -283,6 +283,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-25T11:08:31.909171+00:00"
+    },
+    {
+      "code": "smn5",
+      "date": "2026-06-25",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-25T16:06:02.008955+00:00"
     }
   ],
   "slotpark": [
@@ -479,5 +487,5 @@
       "found_at": "2026-06-25T13:26:43.346259+00:00"
     }
   ],
-  "updated_at": "2026-06-25T13:26:43.346296+00:00"
+  "updated_at": "2026-06-25T16:06:02.009091+00:00"
 }
