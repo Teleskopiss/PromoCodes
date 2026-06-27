@@ -323,6 +323,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-27T14:10:13.815381+00:00"
+    },
+    {
+      "code": "scb5w",
+      "date": "2026-06-27",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-27T17:54:56.584270+00:00"
     }
   ],
   "slotpark": [
@@ -559,5 +567,5 @@
       "found_at": "2026-06-27T15:39:26.679275+00:00"
     }
   ],
-  "updated_at": "2026-06-27T16:43:44.757675+00:00"
+  "updated_at": "2026-06-27T17:54:56.584349+00:00"
 }
