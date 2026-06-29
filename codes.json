@@ -601,7 +601,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-29T11:00:11.438581+00:00"
+    },
+    {
+      "code": "nb7f",
+      "date": "2026-06-29",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-29T12:09:24.901077+00:00"
     }
   ],
-  "updated_at": "2026-06-29T11:45:07.011044+00:00"
+  "updated_at": "2026-06-29T12:09:24.901102+00:00"
 }
