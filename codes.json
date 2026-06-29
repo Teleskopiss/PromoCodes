@@ -349,6 +349,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-29T11:00:11.438532+00:00"
+    },
+    {
+      "code": "mn2x",
+      "date": "2026-06-29",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-29T16:11:42.156529+00:00"
     }
   ],
   "slotpark": [
@@ -611,5 +619,5 @@
       "found_at": "2026-06-29T12:09:24.901077+00:00"
     }
   ],
-  "updated_at": "2026-06-29T12:09:24.901102+00:00"
+  "updated_at": "2026-06-29T16:11:42.156598+00:00"
 }
