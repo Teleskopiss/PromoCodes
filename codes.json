@@ -357,6 +357,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-29T16:11:42.156529+00:00"
+    },
+    {
+      "code": "k4vs2",
+      "date": "2026-06-30",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-06-30T12:24:07.094493+00:00"
     }
   ],
   "slotpark": [
@@ -627,5 +635,5 @@
       "found_at": "2026-06-30T10:09:55.451580+00:00"
     }
   ],
-  "updated_at": "2026-06-30T10:09:55.451651+00:00"
+  "updated_at": "2026-06-30T12:24:07.094552+00:00"
 }
