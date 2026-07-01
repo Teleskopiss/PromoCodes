@@ -649,7 +649,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-06-30T15:15:56.543717+00:00"
+    },
+    {
+      "code": "mn2vc",
+      "date": "2026-07-01",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-01T07:55:53.035508+00:00"
     }
   ],
-  "updated_at": "2026-07-01T03:26:34.843892+00:00"
+  "updated_at": "2026-07-01T07:55:53.035545+00:00"
 }
