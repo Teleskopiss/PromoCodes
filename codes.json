@@ -693,7 +693,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-02T08:31:58.905559+00:00"
+    },
+    {
+      "code": "scvre3",
+      "date": "2026-07-03",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-03T08:47:53.558569+00:00"
     }
   ],
-  "updated_at": "2026-07-03T05:43:25.884147+00:00"
+  "updated_at": "2026-07-03T08:47:53.558610+00:00"
 }
