@@ -391,6 +391,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-02T15:31:15.946838+00:00"
+    },
+    {
+      "code": "sb2s",
+      "date": "2026-07-03",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-03T15:35:04.147597+00:00"
     }
   ],
   "slotpark": [
@@ -703,5 +711,5 @@
       "found_at": "2026-07-03T08:47:53.558569+00:00"
     }
   ],
-  "updated_at": "2026-07-03T13:21:58.573682+00:00"
+  "updated_at": "2026-07-03T15:35:04.147697+00:00"
 }
