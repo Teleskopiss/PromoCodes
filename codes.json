@@ -709,7 +709,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-03T08:47:53.558569+00:00"
+    },
+    {
+      "code": "sxcvq2",
+      "date": "2026-07-03",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-03T18:14:09.800977+00:00"
     }
   ],
-  "updated_at": "2026-07-03T16:59:49.497697+00:00"
+  "updated_at": "2026-07-03T18:14:09.801001+00:00"
 }
