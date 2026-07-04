@@ -399,6 +399,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-03T15:35:04.147597+00:00"
+    },
+    {
+      "code": "nb2x",
+      "date": "2026-07-04",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-04T13:59:16.799848+00:00"
     }
   ],
   "slotpark": [
@@ -719,5 +727,5 @@
       "found_at": "2026-07-03T18:14:09.800977+00:00"
     }
   ],
-  "updated_at": "2026-07-04T12:01:09.863415+00:00"
+  "updated_at": "2026-07-04T13:59:16.799943+00:00"
 }
