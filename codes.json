@@ -725,7 +725,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-03T18:14:09.800977+00:00"
+    },
+    {
+      "code": "sxc2b",
+      "date": "2026-07-05",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-05T09:22:55.910814+00:00"
     }
   ],
-  "updated_at": "2026-07-05T06:15:17.861079+00:00"
+  "updated_at": "2026-07-05T09:22:55.910842+00:00"
 }
