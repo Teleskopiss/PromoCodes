@@ -801,7 +801,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-08T09:37:57.320666+00:00"
+    },
+    {
+      "code": "mnx2",
+      "date": "2026-07-08",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-08T11:26:48.634543+00:00"
     }
   ],
-  "updated_at": "2026-07-08T09:37:57.320708+00:00"
+  "updated_at": "2026-07-08T11:26:48.634573+00:00"
 }
