@@ -441,6 +441,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-07T12:38:39.840478+00:00"
+    },
+    {
+      "code": "sxv2",
+      "date": "2026-07-08",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-08T15:35:36.972918+00:00"
     }
   ],
   "slotpark": [
@@ -811,5 +819,5 @@
       "found_at": "2026-07-08T11:26:48.634543+00:00"
     }
   ],
-  "updated_at": "2026-07-08T13:12:20.237095+00:00"
+  "updated_at": "2026-07-08T15:35:36.972986+00:00"
 }
