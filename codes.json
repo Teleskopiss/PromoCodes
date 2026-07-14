@@ -961,7 +961,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-13T08:09:03.010763+00:00"
+    },
+    {
+      "code": "mng7",
+      "date": "2026-07-14",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-14T16:39:06.404538+00:00"
     }
   ],
-  "updated_at": "2026-07-14T15:15:36.684508+00:00"
+  "updated_at": "2026-07-14T16:39:06.404569+00:00"
 }
