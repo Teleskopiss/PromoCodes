@@ -525,6 +525,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-13T08:09:03.010667+00:00"
+    },
+    {
+      "code": "sc3sa",
+      "date": "2026-07-14",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-14T08:52:12.099101+00:00"
     }
   ],
   "slotpark": [
@@ -955,5 +963,5 @@
       "found_at": "2026-07-13T08:09:03.010763+00:00"
     }
   ],
-  "updated_at": "2026-07-14T06:36:48.866263+00:00"
+  "updated_at": "2026-07-14T08:52:12.099221+00:00"
 }
