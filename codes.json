@@ -969,7 +969,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-14T16:39:06.404538+00:00"
+    },
+    {
+      "code": "scv42v",
+      "date": "2026-07-15",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-15T10:25:35.954052+00:00"
     }
   ],
-  "updated_at": "2026-07-15T08:36:20.534753+00:00"
+  "updated_at": "2026-07-15T10:25:35.954092+00:00"
 }
