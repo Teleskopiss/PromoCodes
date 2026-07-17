@@ -575,6 +575,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-17T09:21:46.870263+00:00"
+    },
+    {
+      "code": "yxve",
+      "date": "2026-07-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-17T15:41:24.146485+00:00"
     }
   ],
   "slotpark": [
@@ -1047,5 +1055,5 @@
       "found_at": "2026-07-17T14:14:29.041925+00:00"
     }
   ],
-  "updated_at": "2026-07-17T14:14:29.041961+00:00"
+  "updated_at": "2026-07-17T15:41:24.146603+00:00"
 }
