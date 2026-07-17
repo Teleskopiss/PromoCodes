@@ -1037,7 +1037,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-17T12:36:21.968758+00:00"
+    },
+    {
+      "code": "yxs2",
+      "date": "2026-07-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-17T14:14:29.041925+00:00"
     }
   ],
-  "updated_at": "2026-07-17T12:36:21.968808+00:00"
+  "updated_at": "2026-07-17T14:14:29.041961+00:00"
 }
