@@ -609,6 +609,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-20T12:53:38.579934+00:00"
+    },
+    {
+      "code": "nbf4",
+      "date": "2026-07-21",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-21T07:14:45.788094+00:00"
     }
   ],
   "slotpark": [
@@ -1107,5 +1115,5 @@
       "found_at": "2026-07-20T07:51:10.676828+00:00"
     }
   ],
-  "updated_at": "2026-07-21T04:32:57.433980+00:00"
+  "updated_at": "2026-07-21T07:14:45.788202+00:00"
 }
