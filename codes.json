@@ -1289,7 +1289,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-28T10:11:39.608731+00:00"
+    },
+    {
+      "code": "zx2sv",
+      "date": "2026-07-28",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-28T14:38:30.752429+00:00"
     }
   ],
-  "updated_at": "2026-07-28T12:14:30.366059+00:00"
+  "updated_at": "2026-07-28T14:38:30.752471+00:00"
 }
