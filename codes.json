@@ -701,6 +701,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-27T07:52:40.264709+00:00"
+    },
+    {
+      "code": "zx2c",
+      "date": "2026-07-28",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-28T10:11:39.608665+00:00"
     }
   ],
   "slotpark": [
@@ -1273,7 +1281,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-27T07:52:40.264824+00:00"
+    },
+    {
+      "code": "mn3x",
+      "date": "2026-07-28",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-07-28T10:11:39.608731+00:00"
     }
   ],
-  "updated_at": "2026-07-28T07:31:36.215955+00:00"
+  "updated_at": "2026-07-28T10:11:39.608769+00:00"
 }
