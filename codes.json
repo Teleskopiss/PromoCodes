@@ -1389,7 +1389,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-07-31T15:29:03.102632+00:00"
+    },
+    {
+      "code": "sm2s",
+      "date": "2026-08-02",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-02T14:25:08.247611+00:00"
     }
   ],
-  "updated_at": "2026-08-02T12:56:37.080794+00:00"
+  "updated_at": "2026-08-02T14:25:08.247655+00:00"
 }
