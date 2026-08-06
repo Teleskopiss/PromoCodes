@@ -1465,7 +1465,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-04T12:19:20.557367+00:00"
+    },
+    {
+      "code": "sxv4",
+      "date": "2026-08-06",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-06T07:32:17.028384+00:00"
     }
   ],
-  "updated_at": "2026-08-06T04:47:26.416292+00:00"
+  "updated_at": "2026-08-06T07:32:17.028422+00:00"
 }
