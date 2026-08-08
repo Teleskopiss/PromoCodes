@@ -843,6 +843,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-07T16:40:42.879059+00:00"
+    },
+    {
+      "code": "xcn2s",
+      "date": "2026-08-08",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-08T09:54:34.817489+00:00"
     }
   ],
   "slotpark": [
@@ -1551,5 +1559,5 @@
       "found_at": "2026-08-08T08:08:55.545356+00:00"
     }
   ],
-  "updated_at": "2026-08-08T09:01:17.515745+00:00"
+  "updated_at": "2026-08-08T09:54:34.817694+00:00"
 }
