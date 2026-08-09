@@ -1557,7 +1557,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-08T08:08:55.545356+00:00"
+    },
+    {
+      "code": "sc3cs",
+      "date": "2026-08-09",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-09T14:52:55.408148+00:00"
     }
   ],
-  "updated_at": "2026-08-09T14:10:24.738231+00:00"
+  "updated_at": "2026-08-09T14:52:55.408253+00:00"
 }
