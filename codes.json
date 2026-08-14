@@ -1685,7 +1685,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-13T08:43:33.050472+00:00"
+    },
+    {
+      "code": "s2sa",
+      "date": "2026-08-14",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-14T12:24:55.073471+00:00"
     }
   ],
-  "updated_at": "2026-08-14T11:23:19.197609+00:00"
+  "updated_at": "2026-08-14T12:24:55.073517+00:00"
 }
