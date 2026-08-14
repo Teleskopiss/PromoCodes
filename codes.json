@@ -911,6 +911,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-13T18:07:32.192858+00:00"
+    },
+    {
+      "code": "s2y",
+      "date": "2026-08-14",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-14T08:38:01.920393+00:00"
     }
   ],
   "slotpark": [
@@ -1679,5 +1687,5 @@
       "found_at": "2026-08-13T08:43:33.050472+00:00"
     }
   ],
-  "updated_at": "2026-08-14T07:07:14.940885+00:00"
+  "updated_at": "2026-08-14T08:38:01.920523+00:00"
 }
