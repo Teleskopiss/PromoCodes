@@ -1717,7 +1717,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-14T16:39:27.497485+00:00"
+    },
+    {
+      "code": "s2ac",
+      "date": "2026-08-15",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-15T14:11:47.772791+00:00"
     }
   ],
-  "updated_at": "2026-08-15T13:43:59.664385+00:00"
+  "updated_at": "2026-08-15T14:11:47.772851+00:00"
 }
