@@ -935,6 +935,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-15T08:14:56.165156+00:00"
+    },
+    {
+      "code": "sxy3",
+      "date": "2026-08-16",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-16T08:48:05.093694+00:00"
     }
   ],
   "slotpark": [
@@ -1727,5 +1735,5 @@
       "found_at": "2026-08-15T14:11:47.772791+00:00"
     }
   ],
-  "updated_at": "2026-08-16T08:15:57.886680+00:00"
+  "updated_at": "2026-08-16T08:48:05.093809+00:00"
 }
