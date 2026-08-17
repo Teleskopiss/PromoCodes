@@ -961,6 +961,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-17T12:20:46.274761+00:00"
+    },
+    {
+      "code": "f1shm",
+      "date": "2026-08-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-17T15:41:07.877275+00:00"
     }
   ],
   "slotpark": [
@@ -1779,5 +1787,5 @@
       "found_at": "2026-08-17T12:20:46.274866+00:00"
     }
   ],
-  "updated_at": "2026-08-17T15:15:23.993828+00:00"
+  "updated_at": "2026-08-17T15:41:07.877422+00:00"
 }
