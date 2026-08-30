@@ -1103,6 +1103,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-28T19:45:18.148197+00:00"
+    },
+    {
+      "code": "s2v8",
+      "date": "2026-08-30",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-30T11:55:58.369402+00:00"
     }
   ],
   "slotpark": [
@@ -2053,7 +2061,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-29T09:20:42.652840+00:00"
+    },
+    {
+      "code": "ver33",
+      "date": "2026-08-30",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-08-30T11:55:58.369501+00:00"
     }
   ],
-  "updated_at": "2026-08-30T06:03:46.007620+00:00"
+  "updated_at": "2026-08-30T11:55:58.369548+00:00"
 }
