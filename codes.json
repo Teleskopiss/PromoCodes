@@ -2129,7 +2129,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-08-31T18:23:48.120264+00:00"
+    },
+    {
+      "code": "wef34",
+      "date": "2026-09-01",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-09-01T16:43:35.693209+00:00"
     }
   ],
-  "updated_at": "2026-09-01T12:18:21.295122+00:00"
+  "updated_at": "2026-09-01T16:43:35.693274+00:00"
 }
