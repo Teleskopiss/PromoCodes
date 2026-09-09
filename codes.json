@@ -2289,7 +2289,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-09-08T17:45:19.970331+00:00"
+    },
+    {
+      "code": "s2vc",
+      "date": "2026-09-09",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-09-09T14:37:11.834035+00:00"
     }
   ],
-  "updated_at": "2026-09-09T10:03:38.955242+00:00"
+  "updated_at": "2026-09-09T14:37:11.834102+00:00"
 }
