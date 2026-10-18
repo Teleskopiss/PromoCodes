@@ -1362,7 +1362,9 @@
       "source": "taplink.cc/gaminator",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-13T14:36:23.304392+00:00"
+      "found_at": "2026-10-13T14:36:23.304392+00:00",
+      "replaced": true,
+      "replaced_at": "2026-10-18T14:02:35.883218+00:00"
     },
     {
       "code": "fo9ii",
@@ -1379,6 +1381,54 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-13T14:52:45.021128+00:00"
+    },
+    {
+      "code": "7sn2",
+      "date": "2026-10-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
+    },
+    {
+      "code": "dvcx3",
+      "date": "2026-10-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
+    },
+    {
+      "code": "ns2",
+      "date": "2026-10-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
+    },
+    {
+      "code": "nm7gv",
+      "date": "2026-10-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
+    },
+    {
+      "code": "sdf56",
+      "date": "2026-10-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
+    },
+    {
+      "code": "7nm",
+      "date": "2026-10-18",
+      "source": "taplink.cc/gaminator",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883218+00:00"
     }
   ],
   "slotpark": [
@@ -2556,7 +2606,9 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-13T14:36:23.304548+00:00"
+      "found_at": "2026-10-13T14:36:23.304548+00:00",
+      "replaced": true,
+      "replaced_at": "2026-10-18T14:02:35.883339+00:00"
     },
     {
       "code": "vu8nj",
@@ -2565,7 +2617,39 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-13T14:52:45.021229+00:00"
+    },
+    {
+      "code": "8xnn2",
+      "date": "2026-10-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883339+00:00"
+    },
+    {
+      "code": "8sn2",
+      "date": "2026-10-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883339+00:00"
+    },
+    {
+      "code": "8ns2",
+      "date": "2026-10-17",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883339+00:00"
+    },
+    {
+      "code": "nmmy3",
+      "date": "2026-10-18",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-18T14:02:35.883339+00:00"
     }
   ],
-  "updated_at": "2026-10-13T15:04:59.923801+00:00"
+  "updated_at": "2026-10-18T14:02:35.883407+00:00"
 }
