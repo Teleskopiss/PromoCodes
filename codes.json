@@ -2649,7 +2649,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-18T14:02:35.883339+00:00"
+    },
+    {
+      "code": "gbv5",
+      "date": "2026-10-19",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-19T05:30:59.496174+00:00"
     }
   ],
-  "updated_at": "2026-10-19T05:03:31.864995+00:00"
+  "updated_at": "2026-10-19T05:30:59.496236+00:00"
 }
