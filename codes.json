@@ -2709,7 +2709,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-19T18:36:42.979812+00:00"
+    },
+    {
+      "code": "nsns2",
+      "date": "2026-10-20",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-20T10:28:27.123158+00:00"
     }
   ],
-  "updated_at": "2026-10-20T10:02:51.902278+00:00"
+  "updated_at": "2026-10-20T10:28:27.123269+00:00"
 }
