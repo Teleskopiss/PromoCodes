@@ -2725,7 +2725,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-20T18:04:05.789183+00:00"
+    },
+    {
+      "code": "sj2a",
+      "date": "2026-10-21",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-21T13:06:07.248574+00:00"
     }
   ],
-  "updated_at": "2026-10-21T12:41:01.750258+00:00"
+  "updated_at": "2026-10-21T13:06:07.248666+00:00"
 }
