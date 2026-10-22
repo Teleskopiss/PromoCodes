@@ -1465,6 +1465,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-22T03:49:49.588041+00:00"
+    },
+    {
+      "code": "s72",
+      "date": "2026-10-22",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-22T10:29:50.116155+00:00"
     }
   ],
   "slotpark": [
@@ -2755,5 +2763,5 @@
       "found_at": "2026-10-22T03:49:49.588128+00:00"
     }
   ],
-  "updated_at": "2026-10-22T10:02:49.073624+00:00"
+  "updated_at": "2026-10-22T10:29:50.116307+00:00"
 }
