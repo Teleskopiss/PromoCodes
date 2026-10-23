@@ -2769,7 +2769,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-22T03:49:49.588128+00:00"
+    },
+    {
+      "code": "sxyy2",
+      "date": "2026-10-23",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-23T09:32:57.932673+00:00"
     }
   ],
-  "updated_at": "2026-10-23T09:03:49.637056+00:00"
+  "updated_at": "2026-10-23T09:32:57.932775+00:00"
 }
