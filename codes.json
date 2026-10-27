@@ -1464,7 +1464,9 @@
       "source": "taplink.cc/gaminator",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-22T03:49:49.588041+00:00"
+      "found_at": "2026-10-22T03:49:49.588041+00:00",
+      "replaced": true,
+      "replaced_at": "2026-10-27T08:38:57.967824+00:00"
     },
     {
       "code": "s72",
@@ -1521,6 +1523,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-26T08:55:46.246515+00:00"
+    },
+    {
+      "code": "j3ns",
+      "date": "2026-10-27",
+      "source": "taplink.cc/gaminator",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-27T08:38:57.967824+00:00"
     }
   ],
   "slotpark": [
@@ -2808,7 +2818,9 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-22T03:49:49.588128+00:00"
+      "found_at": "2026-10-22T03:49:49.588128+00:00",
+      "replaced": true,
+      "replaced_at": "2026-10-27T08:38:57.967930+00:00"
     },
     {
       "code": "sxyy2",
@@ -2857,7 +2869,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-26T10:33:34.708021+00:00"
+    },
+    {
+      "code": "bnm5f",
+      "date": "2026-10-27",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-27T08:38:57.967930+00:00"
     }
   ],
-  "updated_at": "2026-10-27T08:04:35.596319+00:00"
+  "updated_at": "2026-10-27T08:38:57.968007+00:00"
 }
