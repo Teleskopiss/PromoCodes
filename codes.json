@@ -1531,6 +1531,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-27T08:38:57.967824+00:00"
+    },
+    {
+      "code": "s2xcx",
+      "date": "2026-10-28",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-28T09:41:11.496580+00:00"
     }
   ],
   "slotpark": [
@@ -2895,5 +2903,5 @@
       "found_at": "2026-10-27T13:08:21.008461+00:00"
     }
   ],
-  "updated_at": "2026-10-28T09:25:13.425870+00:00"
+  "updated_at": "2026-10-28T09:41:11.496719+00:00"
 }
