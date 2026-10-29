@@ -2894,7 +2894,9 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-27T08:38:57.967930+00:00"
+      "found_at": "2026-10-27T08:38:57.967930+00:00",
+      "replaced": true,
+      "replaced_at": "2026-10-29T09:25:15.110107+00:00"
     },
     {
       "code": "snan2",
@@ -2919,7 +2921,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-28T14:02:39.168141+00:00"
+    },
+    {
+      "code": "dvx2",
+      "date": "2026-10-29",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-29T09:25:15.110107+00:00"
     }
   ],
-  "updated_at": "2026-10-29T09:02:50.602206+00:00"
+  "updated_at": "2026-10-29T09:25:15.110230+00:00"
 }
