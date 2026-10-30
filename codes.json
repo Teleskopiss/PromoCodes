@@ -1565,6 +1565,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-29T12:31:52.907465+00:00"
+    },
+    {
+      "code": "nn8s",
+      "date": "2026-10-30",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-10-30T08:27:54.146519+00:00"
     }
   ],
   "slotpark": [
@@ -2955,5 +2963,5 @@
       "found_at": "2026-10-29T12:31:52.907553+00:00"
     }
   ],
-  "updated_at": "2026-10-30T08:03:10.355270+00:00"
+  "updated_at": "2026-10-30T08:27:54.146630+00:00"
 }
