@@ -2993,7 +2993,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-10-31T09:21:27.069894+00:00"
+    },
+    {
+      "code": "szzz2",
+      "date": "2026-11-02",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-02T08:26:27.304592+00:00"
     }
   ],
-  "updated_at": "2026-11-02T08:03:28.107821+00:00"
+  "updated_at": "2026-11-02T08:26:27.304648+00:00"
 }
