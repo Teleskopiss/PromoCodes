@@ -2968,7 +2968,9 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-10-29T09:25:15.110107+00:00"
+      "found_at": "2026-10-29T09:25:15.110107+00:00",
+      "replaced": true,
+      "replaced_at": "2026-11-02T09:03:17.835997+00:00"
     },
     {
       "code": "snn2",
@@ -3001,7 +3003,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-02T08:26:27.304592+00:00"
+    },
+    {
+      "code": "sfc3",
+      "date": "2026-11-02",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-02T09:03:17.835997+00:00"
     }
   ],
-  "updated_at": "2026-11-02T08:41:29.565322+00:00"
+  "updated_at": "2026-11-02T09:03:17.836078+00:00"
 }
