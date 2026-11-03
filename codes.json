@@ -3029,7 +3029,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-02T09:03:17.835997+00:00"
+    },
+    {
+      "code": "sccc2",
+      "date": "2026-11-03",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-03T12:41:13.218406+00:00"
     }
   ],
-  "updated_at": "2026-11-03T12:26:43.328879+00:00"
+  "updated_at": "2026-11-03T12:41:13.218463+00:00"
 }
