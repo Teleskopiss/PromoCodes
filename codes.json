@@ -3037,7 +3037,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-03T12:41:13.218406+00:00"
+    },
+    {
+      "code": "wws2",
+      "date": "2026-11-04",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-04T10:41:10.862475+00:00"
     }
   ],
-  "updated_at": "2026-11-04T09:22:47.128733+00:00"
+  "updated_at": "2026-11-04T10:41:10.862539+00:00"
 }
