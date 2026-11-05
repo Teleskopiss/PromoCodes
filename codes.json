@@ -1607,6 +1607,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-03T09:02:05.997848+00:00"
+    },
+    {
+      "code": "sszq",
+      "date": "2026-11-05",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-05T09:02:32.116757+00:00"
     }
   ],
   "slotpark": [
@@ -3047,5 +3055,5 @@
       "found_at": "2026-11-04T10:41:10.862475+00:00"
     }
   ],
-  "updated_at": "2026-11-05T08:41:10.378101+00:00"
+  "updated_at": "2026-11-05T09:02:32.116922+00:00"
 }
