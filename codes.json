@@ -1657,6 +1657,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-07T09:21:41.030359+00:00"
+    },
+    {
+      "code": "scb4fdf",
+      "date": "2026-11-09",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-09T09:03:12.326562+00:00"
     }
   ],
   "slotpark": [
@@ -3139,5 +3147,5 @@
       "found_at": "2026-11-08T10:41:09.349999+00:00"
     }
   ],
-  "updated_at": "2026-11-09T08:41:09.035657+00:00"
+  "updated_at": "2026-11-09T09:03:12.326740+00:00"
 }
