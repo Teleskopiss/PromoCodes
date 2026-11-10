@@ -3173,7 +3173,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-09T09:25:37.074727+00:00"
+    },
+    {
+      "code": "ss2a",
+      "date": "2026-11-10",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-10T09:22:35.240710+00:00"
     }
   ],
-  "updated_at": "2026-11-10T09:02:58.222958+00:00"
+  "updated_at": "2026-11-10T09:22:35.240772+00:00"
 }
