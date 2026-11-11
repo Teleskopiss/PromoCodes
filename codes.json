@@ -1691,6 +1691,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-11T09:02:48.960907+00:00"
+    },
+    {
+      "code": "ism2a",
+      "date": "2026-11-11",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-11T14:01:34.251747+00:00"
     }
   ],
   "slotpark": [
@@ -3215,5 +3223,5 @@
       "found_at": "2026-11-11T13:22:04.583411+00:00"
     }
   ],
-  "updated_at": "2026-11-11T13:41:13.261679+00:00"
+  "updated_at": "2026-11-11T14:01:34.251875+00:00"
 }
