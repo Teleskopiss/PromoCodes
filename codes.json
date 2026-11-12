@@ -1709,6 +1709,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-12T11:21:51.280673+00:00"
+    },
+    {
+      "code": "s7wb",
+      "date": "2026-11-12",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-12T15:41:14.457538+00:00"
     }
   ],
   "slotpark": [
@@ -3243,5 +3251,5 @@
       "found_at": "2026-11-12T11:21:51.280834+00:00"
     }
   ],
-  "updated_at": "2026-11-12T15:22:30.250685+00:00"
+  "updated_at": "2026-11-12T15:41:14.457679+00:00"
 }
