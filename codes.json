@@ -3381,7 +3381,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-18T05:41:06.332674+00:00"
+    },
+    {
+      "code": "sxz2aaa",
+      "date": "2026-11-18",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-18T08:41:17.506191+00:00"
     }
   ],
-  "updated_at": "2026-11-18T08:25:31.446507+00:00"
+  "updated_at": "2026-11-18T08:41:17.506266+00:00"
 }
