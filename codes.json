@@ -1809,6 +1809,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-19T15:41:04.612099+00:00"
+    },
+    {
+      "code": "8smx2",
+      "date": "2026-11-20",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-20T15:41:07.998271+00:00"
     }
   ],
   "slotpark": [
@@ -3451,5 +3459,5 @@
       "found_at": "2026-11-20T15:22:06.288390+00:00"
     }
   ],
-  "updated_at": "2026-11-20T15:22:06.288470+00:00"
+  "updated_at": "2026-11-20T15:41:07.998430+00:00"
 }
