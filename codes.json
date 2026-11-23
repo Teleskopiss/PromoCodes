@@ -3501,7 +3501,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-23T09:03:01.064767+00:00"
+    },
+    {
+      "code": "de3aq",
+      "date": "2026-11-23",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-23T12:42:36.684368+00:00"
     }
   ],
-  "updated_at": "2026-11-23T12:29:26.257145+00:00"
+  "updated_at": "2026-11-23T12:42:36.684430+00:00"
 }
