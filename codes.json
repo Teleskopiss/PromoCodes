@@ -1843,6 +1843,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-23T09:27:40.828445+00:00"
+    },
+    {
+      "code": "Disclaimer",
+      "date": "2026-11-24",
+      "source": "coinscrazy.com",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-24T11:41:14.000062+00:00"
     }
   ],
   "slotpark": [
@@ -3511,5 +3519,5 @@
       "found_at": "2026-11-23T12:42:36.684368+00:00"
     }
   ],
-  "updated_at": "2026-11-24T11:22:35.263339+00:00"
+  "updated_at": "2026-11-24T11:41:14.000196+00:00"
 }
