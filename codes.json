@@ -1842,7 +1842,9 @@
       "source": "taplink.cc/gaminator",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-11-23T09:27:40.828445+00:00"
+      "found_at": "2026-11-23T09:27:40.828445+00:00",
+      "replaced": true,
+      "replaced_at": "2026-11-26T15:41:14.817244+00:00"
     },
     {
       "code": "Disclaimer",
@@ -1851,6 +1853,14 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-24T11:41:14.000062+00:00"
+    },
+    {
+      "code": "8cb2",
+      "date": "2026-11-26",
+      "source": "taplink.cc/gaminator",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-26T15:41:14.817244+00:00"
     }
   ],
   "slotpark": [
@@ -3508,7 +3518,9 @@
       "source": "taplink.cc/slotpark",
       "pending": false,
       "collect_url": null,
-      "found_at": "2026-11-23T09:03:01.064767+00:00"
+      "found_at": "2026-11-23T09:03:01.064767+00:00",
+      "replaced": true,
+      "replaced_at": "2026-11-26T15:41:14.817331+00:00"
     },
     {
       "code": "de3aq",
@@ -3541,7 +3553,15 @@
       "pending": false,
       "collect_url": null,
       "found_at": "2026-11-25T13:01:44.479855+00:00"
+    },
+    {
+      "code": "8db2s",
+      "date": "2026-11-26",
+      "source": "taplink.cc/slotpark",
+      "pending": false,
+      "collect_url": null,
+      "found_at": "2026-11-26T15:41:14.817331+00:00"
     }
   ],
-  "updated_at": "2026-11-26T05:22:59.399151+00:00"
+  "updated_at": "2026-11-26T15:41:14.817405+00:00"
 }
